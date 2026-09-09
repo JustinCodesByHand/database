@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.cc }} with sanitizers
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Build and run tests
+        run: make CC=${{ matrix.cc }} test
+
+  valgrind:
+    name: Valgrind (no sanitizers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install valgrind
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+
+      # ASan and valgrind conflict — build without sanitizers for this job
+      - name: Build without sanitizers
+        run: make SAN= test
+
+      - name: Run tests under valgrind
+        run: |
+          valgrind --error-exitcode=1 --leak-check=full \
+                   --errors-for-leak-kinds=definite \
+                   ./build/tests
