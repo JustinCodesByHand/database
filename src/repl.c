@@ -120,12 +120,4 @@ void repl_run(FILE* input_stream, FILE* output_stream) {
         }
     }
     free(input_string_buffer);
-
-     
-
-     
-
-
-
-    (void)input_stream; (void)output_stream;
 }
