@@ -26,9 +26,6 @@ static EXE_Result parse_input(const char *input_string_buffer, FILE *output_stre
         fprintf(output_stream, "Cant parse sql.\n");
         return __CANTPARSE;
     }
-    
-    
-    (void)input_string_buffer; (void)output_stream;
     return __CONTINUE;
 }
 
@@ -75,9 +72,6 @@ static char *trim(char *input_string_buffer) {
 }
 
 
-
-
-
 void repl_run(FILE* input_stream, FILE* output_stream) {
     
      //buffer init for getline()  
@@ -96,7 +90,6 @@ void repl_run(FILE* input_stream, FILE* output_stream) {
         fflush(output_stream);
 
         //getline() usage:= read text string
-        //
         if (getline(&input_string_buffer, &buffer_size, input_stream) == EOF)
         {
             break;
