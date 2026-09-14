@@ -1,5 +1,7 @@
 build/
 *.o
+*.obj
+*.pdb
 *.db
 *.wal
 *.dSYM/
