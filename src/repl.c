@@ -7,15 +7,12 @@
 
 #define PROMPT "minidb> "
 
+//enums return values for input parsing
 typedef enum { __CONTINUE, __EXIT, __CANTPARSE } EXE_Result;
-
 
 
 /* Handles one non-blank, trimmed input_string_buffer. */
 static EXE_Result parse_input(const char *input_string_buffer, FILE *output_stream) {
-    /* TODO: leading '.' -> meta-command
-     *       otherwise    -> we can't parse SQL yet; say so
-     */
     if (input_string_buffer[0] == '.')
     {   char *exit_command = ".exit";
         int exiting = strcmp(input_string_buffer, exit_command);
@@ -39,14 +36,9 @@ static EXE_Result parse_input(const char *input_string_buffer, FILE *output_stre
 
 /* Removes a trailing '\n' (and '\r' if present) input_stream place. */
 static void strip_terminating_char(char *input_string_buffer) {
-    /* TODO */
-
     size_t string_end_index = strcspn(input_string_buffer, "\n\r");
     input_string_buffer[string_end_index] = '\0';
 }
-
-
-
 
 /* Returns a pointer to the first non-space char; trims trailing space input_stream place. */
 static char *trim(char *input_string_buffer) {
@@ -87,16 +79,6 @@ static char *trim(char *input_string_buffer) {
 
 
 void repl_run(FILE* input_stream, FILE* output_stream) {
-    /* TODO:
-     *   char *input_string_buffer = NULL; size_t cap = 0;
-     *   loop:
-     *     fputs(PROMPT, output_stream); fflush(output_stream);
-     *     if (getline(&input_string_buffer, &cap, input_stream) == -1) break;     <- EOF
-     *     strip_terminating_char(input_string_buffer); trimmed = trim(input_string_buffer);
-     *     if (*trimmed == '\0') continue;                 <- blank
-     *     if (parse_input(trimmed, output_stream) == OUTCOME_EXIT) break;
-     *   free(input_string_buffer);                                       <- exactly once
-     */
     
      //buffer init for getline()  
     char *input_string_buffer = NULL;
