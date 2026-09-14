@@ -1,3 +1,24 @@
+#ifndef MINIDB_TEST_H
+#define MINIDB_TEST_H
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+extern int tests_run;
+extern int tests_failed;
+extern const char *current_test;
+
+#define FAIL(fmt, ...)                                                        \
+    do {                                                                      \
+        printf("  FAIL %s\n    %s:%d: " fmt "\n",                             \
+               current_test, __FILE__, __LINE__, ##__VA_ARGS__);              \
+        tests_failed++;                                                       \
+        return;                                                               \
+    } while (0)
+
+#define ASSERT(cond)                                                          \
+    do { if (!(cond)) FAIL("assertion failed: %s", #cond); } while (0)
 
 #define ASSERT_EQ_INT(expected, actual)                                       \
     do {                                                                      \
