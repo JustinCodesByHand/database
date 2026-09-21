@@ -4,9 +4,9 @@
 #include <stdio.h>
 
 /*
- * Reads lines from `in`, writes results to `out`, until .exit or EOF.
+ * Reads lines from `in`, writes results to `lex_tkn_list`, until .exit or EOF.
  * Does NOT take ownership of either stream — the caller closes them.
  */
-void repl_run(FILE *in, FILE *out);
+void repl_run(FILE *in, FILE *lex_tkn_list);
 
 #endif

@@ -5,17 +5,18 @@
 #include <stdio.h>
 
 /* Caller owns the returned list — token_list_free() it. */
-static TokenList *tokenize_with(const char *input) {
+static TokenList *tokenize_with(const char *input) { 
+    //input = "SELECT * FROM users;"
     return tokenize(input);
 }
 
 /* [checklist] Empty input produces exactly one token: TOKEN_EOF. */
 static void empty_input_is_single_eof(void) {
-    TokenList *tokens = tokenize_with("");
-    ASSERT_NOT_NULL(tokens);
-    ASSERT_EQ_INT(1, tokens->count);
-    ASSERT_EQ_INT(TOKEN_EOF, tokens->tokens[0].type);
-    token_list_free(tokens);
+    TokenList *tokens_in_list = tokenize_with("");
+    ASSERT_NOT_NULL(tokens_in_list);
+    ASSERT_EQ_INT(1, tokens_in_list->num_tkn_in_list);
+    ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tokens_in_list[0].type);
+    token_list_free(tokens_in_list);
 }
 
 /* The rest of the checklist (guide line 2610) — write these yourself:

@@ -14,11 +14,11 @@ static char *run_with(const char *input) {
 
     char  *out_buf = NULL;
     size_t out_len = 0;
-    FILE  *out = open_memstream(&out_buf, &out_len);
+    FILE  *lex_tkn_list = open_memstream(&out_buf, &out_len);
 
-    repl_run(in, out);
+    repl_run(in, lex_tkn_list);
 
-    fclose(out);            /* MUST close before out_buf is valid */
+    fclose(lex_tkn_list);            /* MUST close before out_buf is valid */
     fclose(in);
     return out_buf;         /* caller frees */
 }
