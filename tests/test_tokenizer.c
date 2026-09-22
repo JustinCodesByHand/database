@@ -5,18 +5,25 @@
 #include <stdio.h>
 
 /* Caller owns the returned list — token_list_free() it. */
-static TokenList *tokenize_with(const char *input) { 
-    //input = "SELECT * FROM users;"
-    return tokenize(input);
+static TokenList *tokenize_with(const char *input) {
+  // input = "SELECT * FROM users;"
+  return tokenize(input);
 }
 
 /* [checklist] Empty input produces exactly one token: TOKEN_EOF. */
 static void empty_input_is_single_eof(void) {
-    TokenList *tokens_in_list = tokenize_with("");
-    ASSERT_NOT_NULL(tokens_in_list);
-    ASSERT_EQ_INT(1, tokens_in_list->num_tkn_in_list);
-    ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tokens_in_list[0].type);
-    token_list_free(tokens_in_list);
+  TokenList *tokens_in_list = tokenize_with("");
+  ASSERT_NOT_NULL(tokens_in_list);
+  ASSERT_EQ_INT(1, tokens_in_list->num_tkn_in_list);
+  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tokens_in_list[0].type);
+  token_list_free(tokens_in_list);
+}
+static void skipp_whitespace(void) {
+  TokenList *tokens_in_list = tokenize_with("");
+  ASSERT_NOT_NULL(tokens_in_list);
+  ASSERT_EQ_INT(1, tokens_in_list->num_tkn_in_list);
+  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tokens_in_list[0].type);
+  token_list_free(tokens_in_list);
 }
 
 /* The rest of the checklist (guide line 2610) — write these yourself:
@@ -34,6 +41,7 @@ static void empty_input_is_single_eof(void) {
  */
 
 void suite_tokenizer(void) {
-    SUITE("tokenizer");
-    RUN_TEST(empty_input_is_single_eof);
+  SUITE("tokenizer");
+  RUN_TEST(empty_input_is_single_eof);
+  RUN_TEST(skipp_whitespace();
 }

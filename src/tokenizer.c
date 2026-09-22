@@ -1,5 +1,3 @@
-#include <cstddef>
-#define MINIDB_TOKENIZER_H
 #include <assert.h>
 #include <ctype.h>
 #include <stdbool.h>
@@ -84,10 +82,10 @@ static bool list_push(TokenList *foo, Token t) {
     foo->tknlst_capacity = new_capasity;
 
     // append tokenDATA to TokenList
-    foo->tknlst_buffer[foo->total_num_tkns].type = t.type;
-    foo->tknlst_buffer[foo->total_num_tkns].position = t.position;
-    foo->tknlst_buffer[foo->total_num_tkns].start = t.start;
-    foo->tknlst_buffer[foo->total_num_tkns].word_length = t.word_length;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].type = t.type;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].position = t.position;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].start = t.start;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].word_length = t.word_length;
     // verify data assign successfull before return
     return true;
   }
@@ -161,7 +159,7 @@ TokenList *tokenize(const char *source) {
   bool finished_processing = false;
 
   while (finished_processing != true) {
-    /* code */
+    // TODO: add logic to skipp whitespaces.
     if (is_at_end(&lex) == true) {
       Token is_at_end = {TOKEN_EOF, lex.source, 0, lex.cursor_position};
       bool list_append_success = list_push(lex.lex_tkn_list, is_at_end);
