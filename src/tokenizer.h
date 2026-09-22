@@ -38,13 +38,13 @@ typedef struct {
   TokenType type;
   const char
       *start; /* points into the source. NOT owned. NOT NUL-terminated. */
-  size_t length;
+  size_t word_length;
   size_t position;
 } Token;
 
 typedef struct {
-  Token *list_of_tkn_structs;
-  size_t num_tkn_in_list;
+  Token *tknlst_buffer;
+  size_t total_num_tkns;
   size_t tknlst_capacity;
   /* on failure: */
   bool had_error;
@@ -66,5 +66,4 @@ TokenList *tokenize(const char *source);
 void token_list_free(TokenList *foo);
 
 const char *token_type_name(TokenType type); /* for error messages and tests */
-static bool is_at_end(const Lexer *foo);
 #endif

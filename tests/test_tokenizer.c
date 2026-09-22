@@ -2,8 +2,6 @@
 #include "test.h"
 #include "tokenizer.h"
 
-#include <stdio.h>
-
 /* Caller owns the returned list — token_list_free() it. */
 static TokenList *tokenize_with(const char *input) {
   // input = "SELECT * FROM users;"
@@ -14,20 +12,21 @@ static TokenList *tokenize_with(const char *input) {
 static void empty_input_is_single_eof(void) {
   TokenList *tokens_in_list = tokenize_with("");
   ASSERT_NOT_NULL(tokens_in_list);
-  ASSERT_EQ_INT(1, tokens_in_list->num_tkn_in_list);
-  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tokens_in_list[0].type);
+  ASSERT_EQ_INT(1, tokens_in_list->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tknlst_buffer[0].type);
   token_list_free(tokens_in_list);
 }
-static void skipp_whitespace(void) {
-  TokenList *tokens_in_list = tokenize_with("");
+
+/* [checklist] Whitespace-only input produces exactly one token: TOKEN_EOF. */
+static void whitespace_only_input_is_single_eof(void) {
+  TokenList *tokens_in_list = tokenize_with("   \t\n");
   ASSERT_NOT_NULL(tokens_in_list);
-  ASSERT_EQ_INT(1, tokens_in_list->num_tkn_in_list);
-  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tokens_in_list[0].type);
+  ASSERT_EQ_INT(1, tokens_in_list->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tknlst_buffer[0].type);
   token_list_free(tokens_in_list);
 }
 
 /* The rest of the checklist (guide line 2610) — write these yourself:
- *   whitespace-only input -> one TOKEN_EOF
  *   "SELECT" -> [SELECT, EOF]
  *   case-insensitive keywords
  *   "users" -> TOKEN_IDENT length 5
@@ -43,5 +42,5 @@ static void skipp_whitespace(void) {
 void suite_tokenizer(void) {
   SUITE("tokenizer");
   RUN_TEST(empty_input_is_single_eof);
-  RUN_TEST(skipp_whitespace();
+  RUN_TEST(whitespace_only_input_is_single_eof);
 }
