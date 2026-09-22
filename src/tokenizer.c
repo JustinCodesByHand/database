@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// aaaaccept Lexer struct some changes
+// aaaaccept Lexer struct some changesaaa
 // returns a scanner call and passes &lex
 static char peek(const Lexer *foo) {
 
