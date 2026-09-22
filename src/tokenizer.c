@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// accept Lexer struct
+// aaaaccept Lexer struct
 // returns a scanner call and passes &lex
 static char peek(const Lexer *foo) {
 
@@ -15,17 +15,12 @@ static char peek(const Lexer *foo) {
 }
 
 void token_list_free(TokenList *foo) {
-  if (foo != NULL)
-  {    
+  if (foo != NULL) {
     free(foo->tknlst_buffer);
     free(foo);
-  }
-  else
-  {
+  } else {
     fprintf(stderr, "%s", "cant free");
   }
-  
-  
 }
 
 static bool list_push(TokenList *foo, Token t) {
@@ -69,11 +64,10 @@ static bool list_push(TokenList *foo, Token t) {
     foo->tknlst_capacity = new_capasity;
 
     // append tokenDATA to TokenList
-    foo->tknlst_buffer[foo->total_num_tkns -1].type = t.type;
-    foo->tknlst_buffer[foo->total_num_tkns -1].position = t.position;
-    foo->tknlst_buffer[foo->total_num_tkns -1].start = t.start;
-    foo->tknlst_buffer[foo->total_num_tkns -1].word_length = t.word_length;
-  
+    foo->tknlst_buffer[foo->total_num_tkns - 1].type = t.type;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].position = t.position;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].start = t.start;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].word_length = t.word_length;
 
     return true;
   }
@@ -92,7 +86,7 @@ static bool is_at_end(const Lexer *pbR_lexer) {
 
 /*
  * Tokenizes `source`. The returned list points INTO `source`,
- * which must outlive the list.
+ * which must outlive the list. aaaaa
  * CALLER OWNS the result — call token_list_free().
  */
 TokenList *tokenize(const char *source) {
