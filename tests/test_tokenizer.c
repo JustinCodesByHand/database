@@ -13,7 +13,7 @@ static void empty_input_is_single_eof(void) {
   TokenList *tokens_in_list = tokenize_with("");
   ASSERT_NOT_NULL(tokens_in_list);
   ASSERT_EQ_INT(1, tokens_in_list->total_num_tkns);
-  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tknlst_buffer[0].type);
+  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tknlst_buffer[0].token_type);
   token_list_free(tokens_in_list);
 }
 
@@ -22,7 +22,7 @@ static void whitespace_only_input_is_single_eof(void) {
   TokenList *tokens_in_list = tokenize_with("   \t\n");
   ASSERT_NOT_NULL(tokens_in_list);
   ASSERT_EQ_INT(1, tokens_in_list->total_num_tkns);
-  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tknlst_buffer[0].type);
+  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tknlst_buffer[0].token_type);
   token_list_free(tokens_in_list);
 }
 
