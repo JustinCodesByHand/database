@@ -27,7 +27,7 @@ static bool list_push(TokenList *foo, Token newToken) {
   if (foo->total_num_tkns == 0 && foo->tknlst_capacity == 0) {
     size_t new_capasity = 1;
     size_t bytes_in_mem = sizeof(Token) * new_capasity;
-    Token *new_mem_address = (Token *)realloc(foo->tknlst_buffer, bytes_in_mem);
+    Token *new_mem_address = (Token *)realloc(foo->token_list, bytes_in_mem);
     assert(new_mem_address != NULL);
 
     foo->tknlst_buffer = new_mem_address;
@@ -53,7 +53,7 @@ static bool list_push(TokenList *foo, Token newToken) {
     size_t bytes_in_mem = sizeof(Token) * new_capasity;
 
     // captures the new address from realloc
-    Token *new_mem_address = (Token *)realloc(foo->tknlst_buffer, bytes_in_mem);
+    Token *new_mem_address = (Token *)realloc(foo->token_list, bytes_in_mem);
     assert(new_mem_address != NULL);
 
     // update mem address of tokenlist
@@ -86,7 +86,7 @@ static bool is_at_end(const Lexer *pbR_lexer) {
 }
 
 /*
- * Tokenizes `source`. The returned list points INTO `source`,
+ * Tokenizes `source`. The returned list points INTO `source`a,
  * which must outlive the list. aaaaa
  * CALLER OWNS the result — call token_list_free().
  */

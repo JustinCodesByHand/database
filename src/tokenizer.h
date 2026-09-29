@@ -43,7 +43,7 @@ typedef struct {
 } Token;
 
 typedef struct {
-  Token *tknlst_buffer;
+  Token *token_list;
   size_t total_num_tkns;
   size_t tknlst_capacity;
   /* on failure: */
