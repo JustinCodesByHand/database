@@ -1,6 +1,5 @@
 #include "tokenizer.h"
 #include <assert.h>
-#include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -23,7 +22,7 @@ void token_list_free(TokenList *foo) {
   }
 }
 
-static bool list_push(TokenList *foo, Token t) {
+static bool list_push(TokenList *foo, Token newToken) {
   // if starting with 0,0 doubling capasity = 0, so guard against
   if (foo->total_num_tkns == 0 && foo->tknlst_capacity == 0) {
     size_t new_capasity = 1;
@@ -36,10 +35,11 @@ static bool list_push(TokenList *foo, Token t) {
     foo->tknlst_capacity = new_capasity;
 
     // append tokenDATA to TokenList
-    foo->tknlst_buffer[foo->total_num_tkns - 1].type = t.type;
-    foo->tknlst_buffer[foo->total_num_tkns - 1].position = t.position;
-    foo->tknlst_buffer[foo->total_num_tkns - 1].start = t.start;
-    foo->tknlst_buffer[foo->total_num_tkns - 1].word_length = t.word_length;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].type = newToken.type;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].position = newToken.position;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].start = newToken.start;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].word_length =
+        newToken.word_length;
     // verify data assign successfull before return
     return true;
   }
@@ -64,10 +64,11 @@ static bool list_push(TokenList *foo, Token t) {
     foo->tknlst_capacity = new_capasity;
 
     // append tokenDATA to TokenList
-    foo->tknlst_buffer[foo->total_num_tkns - 1].type = t.type;
-    foo->tknlst_buffer[foo->total_num_tkns - 1].position = t.position;
-    foo->tknlst_buffer[foo->total_num_tkns - 1].start = t.start;
-    foo->tknlst_buffer[foo->total_num_tkns - 1].word_length = t.word_length;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].type = newToken.type;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].position = newToken.position;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].start = newToken.start;
+    foo->tknlst_buffer[foo->total_num_tkns - 1].word_length =
+        newToken.word_length;
 
     return true;
   }
@@ -107,14 +108,14 @@ TokenList *tokenize(const char *source) {
 
   // dispatch loop
 
-  bool finished_processing = false;
+  bool exitStatus = false;
 
-  while (finished_processing != true) {
+  while (exitStatus != true) {
     // TODO: add logic to skipp whitespaces.
     if (is_at_end(&lex) == true) {
       Token is_at_end = {TOKEN_EOF, lex.source, 0, lex.cursor_position};
-      bool list_append_success = list_push(lex.lex_tkn_list, is_at_end);
-      finished_processing = list_append_success;
+      bool add_to_list = list_push(lex.lex_tkn_list, is_at_end);
+      exitStatus = add_to_list;
       // exits loop if append eof token
     }
   }
