@@ -4,7 +4,7 @@
 clarifying questions and corrections kept in full, so context can be handed
 between machines/setups without re-deriving it.
 
-**Last updated:** 2026-09-28
+**Last updated:** 2026-09-29
 **Working directory:** `/home/jcmac/code/database`
 
 > How to use this doc when switching setups: read "Current state" and
@@ -102,8 +102,8 @@ Everything is built together; `tests/test_tokenizer.c` is where tokenizer work i
 
 ```c
 typedef struct {
-  TokenType type;
-  const char *start;   /* points INTO the source. NOT owned. NOT NUL-terminated. */
+  TokenType token_type;
+  const char *input_string; /* points INTO the input. NOT owned. NOT NUL-terminated. */
   size_t word_length;
   size_t position;
 } Token;
@@ -118,14 +118,20 @@ typedef struct {
 } TokenList;
 
 typedef struct {
-  const char *source;
+  const char *input_string;
   size_t cursor_position;
   TokenList *lex_tkn_list;
 } Lexer;
 ```
 
+> **WIP rename (uncommitted, working tree).** The fields were renamed:
+> `Token.type` → `token_type`, `Token.start` → `input_string`,
+> `Lexer.source` → `input_string`, and `tokenize`'s parameter → `input_string`.
+> `tokenizer.c` has **not** been updated and still uses the old names (see §6). If this
+> rename is reverted, revert these snippets too.
+
 Public API: `tokenize`, `token_list_free`, `token_type_name`.
-Header and `.c` names are now aligned.
+Header and `.c` names match **except** for the WIP field rename above.
 
 **Design invariants to remember:**
 - A `Token` does not own its text. It **points into** the caller's source, so the
@@ -274,6 +280,39 @@ so decide before the parser grows.
    or `EOF`. A negative `char` (e.g. UTF-8 byte `0xE3` → `-29`) is UB. Cast:
    `isspace((unsigned char)peek(&lex))`. Also: `<ctype.h>` is not yet included.
 
+### `break` vs `continue` vs `advance` (asked explicitly this session)
+
+Three different jobs — keep them separate:
+
+- **`advance(&lex)` is the only thing that moves.** It increments `cursor_position`,
+  so the lexer now points at the next character. This is the "move to the next character."
+- **`break`** targets the innermost enclosing **`switch` *or* loop**. Inside a `case`, it
+  exits the **switch only** — it does **not** exit the `while`.
+- **`continue`** belongs **only to loops**; it cannot belong to a switch.
+  `continue` outside a loop is a compile error: `continue statement not within a loop`.
+  Inside a `case` it jumps to the enclosing loop's next iteration, skipping the rest of
+  the switch **and** the rest of the loop body.
+
+Demonstrated: in a `for` loop containing a `switch`, `case 2: break;` still ran the
+statement *after* the switch (same iteration), while `case 3: continue;` skipped it.
+
+**In `tokenize`, the switch is the entire body of `while (!is_at_end(&lex))`, so `break`
+and `continue` are equivalent there.** `continue` is the more future-proof choice
+("this iteration is done") if code is ever added after the switch.
+
+**Critical correction:** `continue` does NOT move the cursor. If a case calls `continue`
+without `advance`, the next iteration peeks the *same* character, matches the same case,
+moves nothing, continues again → **infinite loop**. `advance` prevents the hang;
+`break`/`continue` only prevent fall-through into the next case's body. Every
+token-consuming case needs *both* a move and a terminator.
+
+**Empty case labels are fine.** `case ' ': case '\t': case '\n':` sharing one body is
+the idiom; verified to compile clean under the full flag set with no `-Wimplicit-fallthrough`
+warning (nothing falls). Only a case that has *statements* and runs into the next label triggers it.
+
+**C has no labeled `break`.** Java's `break label;` does not exist. To exit a loop from
+inside a nested switch you would need a flag or `goto`.
+
 ### `realloc` / OOM / `assert` (asked explicitly this session)
 
 - **OOM = out of memory.** `malloc`/`realloc` return `NULL` on failure and set
@@ -403,10 +442,44 @@ The `0` is `word_length`, and `0` is **correct** for EOF. The questionable field
 `start = lex.source` (start of input) vs `position` (end of input) — inconsistent.
 `-1` is impossible anyway: `word_length` is unsigned, so `-1` becomes `SIZE_MAX`.
 
+### Session 2026-09-29 — scope, control flow, whitespace
+
+**Q: With no parameters, what data can `advance` see? Does it see the caller's stack?**
+No. A function sees only (1) its own parameters, (2) its own locals, (3) file-scope
+/`static` variables. The caller's locals are **undeclared** in the callee — the compiler
+says `error: 'lex' undeclared`, not "private". The stack frames are physically adjacent
+(demo showed `&lex` and `&my_own_local` 32 bytes apart) but **adjacency is not access**;
+the language gives no name to reach another frame. The only two bridges are parameters
+and globals. Hence `advance` must take `Lexer *foo` (non-`const`, because it writes).
+
+**Q: Do I need to return a space token?**
+No. Whitespace is **skipped**, not tokenized: (a) the enum has no whitespace `TokenType`
+— the type list is the contract; (b) the `whitespace_only_input_is_single_eof` test
+asserts exactly 1 token, so emitting them fails it. Whitespace still matters as a
+**boundary** (it terminates a word) — you just never emit the terminator. Exception:
+inside a string literal, whitespace is data and `scan_string` must keep it.
+
+**Q: So `break` and `continue` affect the `while`, not the switch?**
+Backwards. `break` targets the innermost `switch` **or** loop — in a case, it leaves the
+**switch**, not the `while`. `continue` belongs only to **loops** (`continue` with no
+loop = compile error) and skips to the enclosing loop's next iteration. In `tokenize`
+the switch *is* the whole loop body, so both are equivalent there.
+
+**Q: After `advance`, do I call `continue` to move to the next character?**
+Almost — but **`advance` is what moves, `continue` moves nothing.** `advance` increments
+`cursor_position`; `continue` only jumps back to the loop condition. `continue` without
+`advance` = infinite loop on the same char. You also need `break`/`continue` to prevent
+fall-through into the next case's body. Full write-up in §8.
+
 ### Action taken this session
 
 - Added `token_type_name` to `src/tokenizer.c` and verified it fully with a
-  standalone harness under the project's exact flags (§7). No other code changes.
+  standalone harness under the project's exact flags (§7).
+- Committed `ainotes.md` + `src/tokenizer.c` to a new branch **`dev`** (`0efae80`),
+  pushed to `origin/dev`. `main` left untouched at `4b84f70`.
+  (Repo-local git identity set to the existing commit author; no local `user.*` config existed.)
+- Added §8 subsections: `switch` mechanics, dispatch traps, `break`/`continue`/`advance`,
+  `realloc`/OOM/`assert`.
 
 ### Docs worth keeping
 
