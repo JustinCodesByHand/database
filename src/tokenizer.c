@@ -1,27 +1,28 @@
 #include "tokenizer.h"
 #include <assert.h>
+#include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-// aaaaccept Lexer struct some changesaaaaaaaaaaaaa:aaaaa:
-// returns a scanner call and passes &lex
 static char peek(const Lexer *foo) {
-
   char first_letter = foo->source[foo->cursor_position];
-  return first_letter;
+  return (char)(unsigned char)first_letter;
 }
 
-void token_list_free(TokenList *foo) {
-  if (foo != NULL) {
-    free(foo->tknlst_buffer);
-    free(foo);
+static bool is_at_end(const Lexer *pbR_lexer) {
+  // peek at first char and see if \0
+  char nul_term = peek(pbR_lexer);
+  if (nul_term == '\0') {
+    return true;
   } else {
-    fprintf(stderr, "%s", "cant free");
+    return false;
   }
 }
 
+// aaaaccept Lexer struct some changesaaaaaaaaaaaaa:aaaaa:
+// returns a scanner call and passes &lex
 static bool list_push(TokenList *foo, Token newToken) {
   // if starting with 0,0 doubling capasity = 0, so guard against
   if (foo->total_num_tkns == 0 && foo->tknlst_capacity == 0) {
@@ -75,13 +76,12 @@ static bool list_push(TokenList *foo, Token newToken) {
   return false;
 }
 
-static bool is_at_end(const Lexer *pbR_lexer) {
-  // peek at first char and see if \0
-  char nul_term = peek(pbR_lexer);
-  if (nul_term == '\0') {
-    return true;
+void token_list_free(TokenList *foo) {
+  if (foo != NULL) {
+    free(foo->tknlst_buffer);
+    free(foo);
   } else {
-    return false;
+    fprintf(stderr, "%s", "cant free");
   }
 }
 
@@ -108,16 +108,23 @@ TokenList *tokenize(const char *source) {
 
   // dispatch loop
 
-  bool exitStatus = false;
-
-  while (exitStatus != true) {
+  // while we have not encountered '\0'
+  while (!is_at_end(&lex)) {
     // TODO: add logic to skipp whitespaces.
-    if (is_at_end(&lex) == true) {
-      Token is_at_end = {TOKEN_EOF, lex.source, 0, lex.cursor_position};
-      bool add_to_list = list_push(lex.lex_tkn_list, is_at_end);
-      exitStatus = add_to_list;
-      // exits loop if append eof token
+
+    char current_char = peek(&lex);
+
+    switch (current_char) { case isspace(current_char): }
+  }
+
+  // if we read '\0', then make EOF token and exit
+  if (is_at_end(&lex) == true) {
+    Token is_at_end = {TOKEN_EOF, lex.source, 0, lex.cursor_position};
+    bool add_to_list = list_push(lex.lex_tkn_list, is_at_end);
+    if (!add_to_list) {
+      return NULL;
     }
+    // exits loop if append eof token
   }
 
   return lexers_tkn_list;
