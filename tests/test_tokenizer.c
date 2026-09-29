@@ -13,23 +13,24 @@ static void empty_input_is_single_eof(void) {
   TokenList *tokens_in_list = tokenize_with("");
   ASSERT_NOT_NULL(tokens_in_list);
   ASSERT_EQ_INT(1, tokens_in_list->total_num_tkns);
-  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tknlst_buffer[0].type);
+  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->token_list[0].token_type);
   token_list_free(tokens_in_list);
 }
 
 /* [checklist] Whitespace-only input produces exactly one token: TOKEN_EOF. */
 static void whitespace_only_input_is_single_eof(void) {
-  TokenList *tokens_in_list = tokenize_with("   \t\n");
-  ASSERT_NOT_NULL(tokens_in_list);
-  ASSERT_EQ_INT(1, tokens_in_list->total_num_tkns);
-  ASSERT_EQ_INT(TOKEN_EOF, tokens_in_list->tknlst_buffer[0].type);
-  token_list_free(tokens_in_list);
+  TokenList *tknlst_buffer = tokenize_with("   \t\n");
+  ASSERT_NOT_NULL(tknlst_buffer);
+  ASSERT_EQ_INT(1, tknlst_buffer->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_EOF, tknlst_buffer->token_list[0].token_type);
+  token_list_free(tknlst_buffer);
 }
 
 /* The rest of the checklist (guide line 2610) — write these yourself:
  *   "SELECT" -> [SELECT, EOF]
  *   case-insensitive keywords
- *   "users" -> TOKEN_IDENT length 5
+ *   "users" -> TOKEN_IDENT length 5:
+ *
  *   "selection" -> ONE TOKEN_IDENT
  *   numbers, strings (quotes excluded), unterminated string error
  *   "<=" -> TOKEN_LTE; "<" alone -> TOKEN_LT
