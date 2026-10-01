@@ -38,7 +38,7 @@ typedef struct {
   TokenType token_type;
   const char *input_string;
   size_t word_length;
-  size_t position;
+  size_t start_index;
 } Token;
 
 typedef struct {
@@ -56,11 +56,13 @@ typedef struct {
   size_t cursor_position;
   TokenList *lex_tkn_list;
 } Lexer;
+
 TokenList *tokenize(const char *input_string);
 
 void token_list_free(TokenList *foo);
 
 void move_cursor(Lexer *lexer);
 
-const char *token_type_name(TokenType type); /* for error messages and tests */
+// const char *token_type_name}(TokenType type); /* for error messages and tests
+// */
 #endif
