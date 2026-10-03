@@ -38,11 +38,11 @@ typedef struct {
   TokenType token_type;
   const char *input_string;
   size_t word_length;
-  size_t position;
+  size_t start_index;
 } Token;
 
 typedef struct {
-  Token *tknlst_buffer;
+  Token *token_list;
   size_t total_num_tkns;
   size_t tknlst_capacity;
   /* on failure: */
@@ -56,11 +56,13 @@ typedef struct {
   size_t cursor_position;
   TokenList *lex_tkn_list;
 } Lexer;
+
 TokenList *tokenize(const char *input_string);
 
 void token_list_free(TokenList *foo);
 
-void next_character(Lexer lex);
+void move_cursor(Lexer *lexer);
 
-const char *token_type_name(TokenType type); /* for error messages and tests */
+// const char *token_type_name}(TokenType type); /* for error messages and tests
+// */
 #endif
