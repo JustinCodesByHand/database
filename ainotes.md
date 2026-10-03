@@ -4,12 +4,18 @@
 clarifying questions and corrections kept in full, so context can be handed
 between machines/setups without re-deriving it.
 
-**Last updated:** 2026-09-29
+**Last updated:** 2026-10-03
 **Working directory:** `/home/jcmac/code/database`
 
-> How to use this doc when switching setups: read "Current state" and
-> "Blockers" first, then "Open questions / next steps". The conversation log at
-> the bottom is the *why* behind the lessons.
+> How to use this doc when switching setups: read §6 "Current state" first,
+> then §10 "Open questions / next steps". The conversation log at the bottom is
+> the *why* behind the lessons.
+
+> **STANDING INSTRUCTION (from the learner, 2026-10-03):** update this document
+> after *every* meaningful question, discovery, or piece of progress — not in a
+> batch at the end of a session. If something was learned the hard way (a
+> question that was misunderstood, a bug that cost time), it gets written down
+> here so the next setup does not have to rediscover it.
 
 ---
 
@@ -144,47 +150,82 @@ Header and `.c` names match **except** for the WIP field rename above.
 
 ## 6. Current state of `src/tokenizer.c`
 
-**Working:**
-- `peek` — clean, no debug output.
-- `is_at_end` — pure yes/no.
-- `list_push` — both branches now write `[total_num_tkns - 1]`; the old off-by-one
-  and the backwards `!=` assert are gone.
-- `token_list_free` — NULL-safe (prints "cant free" to stderr; arguably should be a
-  silent no-op, mirroring `free`).
-- `tokenize` no longer frees early.
-- `token_type_name` — **added this session** (see §7).
+**STATUS: BUILDING AND TESTS PASSING — 5 tests, 0 failed.** First green run, 2026-10-03.
+No compile blockers remain.
 
-**BLOCKERS — the file does not parse, so no test can run:**
+**Naming (final, after the WIP rename):**
 
-```
-src/tokenizer.c:183:12: error: implicit declaration of function 'is_whitespace'
-                                   [-Wimplicit-function-declaration]
-src/tokenizer.c:195:3:  error: expected declaration or statement at end of input
-src/tokenizer.c:179:8:  error: variable 'exitStatus' set but not used
-                                   [-Werror=unused-but-set-variable=]
-```
+| field | was | now |
+|---|---|---|
+| enum type name | `TokenType` | `tokentype` |
+| `Token.token_type` | `type` | `token_type` |
+| `Token.input_string` | `start` | `input_string` |
+| `Token.start_index` | `position` | `start_index` |
+| `TokenList.token_list_buffer` | `tknlst_buffer` | `token_list_buffer` |
+| `Lexer.input_string` | `source` | `input_string` |
+| `Lexer.lex_tkn_list_struct` | `lex_tkn_list` | `lex_tkn_list_struct` |
+| `tokenize` param | `source` | `input_string` |
 
-1. **`is_whitespace` is called at line 183 but defined nowhere.** No `<ctype.h>`
-   include either. (And per Lesson 4, this function probably should not exist.)
-2. **`tokenize` is missing its closing brace.** The file ends at
-   `return lexers_tkn_list;`. The restructure deleted the `}`.
-3. **`exitStatus` is vestigial.** The loop used to be `while (exitStatus != true)`;
-   it is now `while (!is_at_end(&lex))`, so nothing reads `exitStatus`.
+Note: `input_string` now names **two different things** — `Token.input_string` points at a
+token's first character, `Lexer.input_string` points at the whole input. They are not
+interchangeable; the name is just reused.
 
-**Also still broken (the actual hang bug):** the loop body is empty —
+**Functions present:**
 
-```c
-while (!is_at_end(&lex)) {
-  if (is_whitespace(&lex)) {
-  }
-}
-```
+- `peek(const Lexer *)`, `is_at_end(const Lexer *)` — fine.
+- `increment_cursor(Lexer *)` — this is the guide's `advance`. **Not `static`** (the only
+  helper without it) and returns `void` (the guide says `char`). Has a TODO for an over-read guard.
+- `grow_list_capisity(TokenList *)` — owns the capacity math including the 0-guard.
+  Returns `void`, so it *cannot* report failure.
+- `add_tkn_to_tknlist(TokenList *, Token)` — copies the 4 fields.
+- `list_push(TokenList *, Token)` — refactored from 3 branches + a dead fallthrough down to
+  2 conditions. Good shape; the guide's "write growth logic once" instruction is satisfied.
+- `token_list_free(TokenList *)` — NULL-safe and silent now (the `fprintf` is gone).
+- `token_type_name(TokenType)` — all 27 cases, verified (§7).
 
-— so on any real input it spins forever.
+**Open defects — none are caught by the current tests:**
 
-**Absent:** `advance` (and `peek_next`, `match`, `scan_number`, `scan_identifier`,
-`scan_string`). See the guide's helper list at guide line ~2594.
+1. **`tokenizer.c:138-140` — infinite loop. STILL OPEN.** The alpha loop has an **empty body**,
+   so nothing advances the cursor. It also uses `|` (bitwise OR) instead of `||`: for `';'`,
+   `isalpha(';') | ';'` = `0 | 59` = 59 (nonzero → true), so the condition is true for nearly
+   every character. Invisible to the suite because both test inputs (empty, all-whitespace)
+   never enter that loop. **This is the highest-severity item remaining.**
 
+**Fixed 2026-10-03 (verified by inspection + green suite):**
+
+2. ~~`tokenizer.c:47` unconditional assign~~ **FIXED.** The NULL check now lives *inside*
+   `grow_list_capisity`, before the assignments. On failure neither `token_list_buffer` nor
+   `tknlst_capacity` is touched, and `list_push` returns `false` before calling
+   `add_tkn_to_tknlist`, so `total_num_tkns` is unchanged too. The struct stays consistent in
+   every branch. Used the check-then-assign pattern (no separately named temp, but
+   `new_mem_address` serves the purpose).
+3. ~~`tokenizer.c:148` leak~~ **FIXED.** Now calls `token_list_free(...)` instead of
+   `free(...)`, so both allocations are released.
+4. ~~`tokenizer.c:37-38` irrelevant variable~~ **FIXED.** Condition is now
+   `tknlst_capacity == 0` alone, and `new_capasity = 1` is a literal rather than
+   `capacity + 1`.
+
+**New open items (2026-10-03):**
+
+5. **`token_type_name` was deleted from `tokenizer.c`.** Its declaration in the header is
+   commented out (the comment-out was mangled — a stray `}` and an orphaned `*/` — since
+   repaired into a deliberate note). Nothing calls it, so the build passes; any future caller
+   fails at **link** time. **Recover from git: branch `dev`, commit `0efae80`** rather than
+   rewriting. Remember it must be updated for the `TokenType` → `tokentype` rename.
+6. **`grow_list_capisity` returns `void`.** Failure travels as a side effect (mutating
+   `had_error`) rather than a return value. Works, but the function that can fail cannot report it.
+7. **`had_error` is sticky — never reset.** Once true, `list_push` returns `false` for every
+   subsequent push even when there is room. It is a latch, not a per-call result. It is also
+   the struct's *general* error flag (the guide pairs it with `error_msg`/`error_pos` for
+   tokenizer errors), so reusing it for OOM means a caller cannot distinguish "malformed SQL"
+   from "out of memory". Still an open design decision.
+8. **Header declared `move_cursor` but the definition is `static void increment_cursor`.**
+   Different names — declared-but-undefined and defined-but-undeclared. It compiled only
+   because nothing called either. The bogus declaration has been removed; a `static` function
+   must not appear in a public header, and renaming the declaration to match would itself
+   error ("non-static declaration follows static definition").
+
+**Absent:** `peek_next`, `match`, `scan_number`, `scan_identifier`, `scan_string`.
 ---
 
 ## 7. `token_type_name` — ADDED AND VERIFIED
@@ -471,15 +512,103 @@ Almost — but **`advance` is what moves, `continue` moves nothing.** `advance` 
 `advance` = infinite loop on the same char. You also need `break`/`continue` to prevent
 fall-through into the next case's body. Full write-up in §8.
 
+### Session 2026-10-03 — OOM, realloc ownership, refactor review
+
+**Q: What is OOM?**
+Re-explained (had been covered 09-29; notes now point at §8 so it need not be re-derived).
+OOM = "out of memory": `malloc`/`realloc` **return `NULL`** and set `errno = ENOMEM`.
+They do not crash. Verified again that `assert` is **live** in this build (no `-DNDEBUG`
+in the Makefile), so `assert(ptr != NULL)` turns an OOM into a SIGABRT (exit 134).
+**Reconfirmed lesson:** on `realloc` failure the original block is still valid and untouched.
+
+**Q: Do I need to reassign the new address, or does `realloc` do it automatically?**
+**No — `realloc` never writes to your variable.** Demonstrated:
+
+```
+before:  buf = 0x556b4e727010
+after:   buf = 0x556b4e727010   <- UNCHANGED
+         tmp = 0x556b4e728040   <- what realloc returned
+```
+
+Why: `realloc(ptr, n)` receives a **copy** of the address (pass-by-value), so it has no
+way to write back — same rule as `advance` not being able to see `lex`. To modify a
+caller's variable you must pass the *address of* the variable; `realloc` has no such
+parameter, so it returns the value instead. One channel in, one channel out.
+The one-liner `p = realloc(p, n)` **leaks** on failure (proven with ASan:
+`Direct leak of 16 byte(s)`). Also: on success `realloc` **frees the old block**, so
+even *reading* the old pointer afterwards trips `-Wuse-after-free`. And `realloc` may
+return the same address or a different one — never assume.
+
+**Q: Can the grow function return an `int` with different codes?**
+Yes, and it is one of the three legitimate C shapes. But an `int` is only one channel —
+growing must convey *three* facts (new buffer, new capacity, success/failure).
+`int` earns its keep at **3+ distinct outcomes**; with two outcomes `bool` is safer
+because `true`/`false` cannot be misread (no `return 1;` meaning-success trap).
+**Consistency argument from this file:** `list_push` and `add_tkn_to_tknlist` both take
+`TokenList *` and mutate it, so grow fits that pattern and then only needs to return a
+single `bool` — the three-facts problem collapses with no out-params.
+
+**Q: Can I `switch` on capacity — `case 0` / `case full` / `default`?**
+**No.** Compiler: `error: case label does not reduce to an integer constant`. Two deeper
+reasons: (1) "full" is a *comparison between two runtime values* (`total == capacity`),
+and a switch can only match a single value against constants — the information isn't in
+the expression at all; (2) capacity has a huge value space (1,2,4,…16384), so most cases
+would never match. **Rule of thumb: switch on a value from a small fixed set (a `char`, an
+enum); `if` on a condition involving comparison or range.** Their `case 0` and `case full`
+also overlap at (0,0). Note their `switch (peek(&lexer))` character dispatch is the
+*correct* use of switch.
+
+**Q: How does my refactor look?**
+Reviewed without prescribing fixes. Praised: `list_push` went 3 branches + dead fallthrough
+→ 2 conditions; the doubling rule now lives in one function as the guide demands; clean
+how/when separation; `token_list_free` is now silent. Flagged four defects (§6) — the
+infinite loop at 138, the too-late NULL check at 47, the leak at 148, and the irrelevant
+variable in the growth condition at 37-38.
+
+**Q (clarified after review): what exactly is wrong with #2, #3, #4?**
+Explained in full below — these are the three cost the most time so far.
+
+### New lessons from this session
+
+- **Detecting failure ≠ handling it.** `list_push:75` checks `token_list == NULL`, but by
+  then `grow_list_capisity:47` has already overwritten the only pointer to the live buffer.
+  The check *detects*; it cannot *recover*. A check is only useful if it runs **before**
+  the state it guards is destroyed.
+- **One `malloc`, one `free`.** `TokenList` is two separate allocations (the struct, and
+  the `token_list` buffer inside it). Freeing the outer one does not free the inner one.
+  This is exactly what `token_list_free` exists for.
+- **`|` is not `||`.** `|` evaluates both sides and does a bitwise OR; `||` short-circuits.
+  In a `while`, `isalpha(c) | c` is nonzero for almost any character, so the loop condition
+  is almost always true.
+- **A `void` function cannot report failure.** `grow_list_capisity` returning `void` means
+  `list_push` has no way to learn whether the grow worked.
+
 ### Action taken this session
 
-- Added `token_type_name` to `src/tokenizer.c` and verified it fully with a
-  standalone harness under the project's exact flags (§7).
-- Committed `ainotes.md` + `src/tokenizer.c` to a new branch **`dev`** (`0efae80`),
-  pushed to `origin/dev`. `main` left untouched at `4b84f70`.
-  (Repo-local git identity set to the existing commit author; no local `user.*` config existed.)
-- Added §8 subsections: `switch` mechanics, dispatch traps, `break`/`continue`/`advance`,
-  `realloc`/OOM/`assert`.
+- **First green test run: 5 tests, 0 failed.** (`empty_input_is_single_eof`,
+  `whitespace_only_input_is_single_eof`, plus 3 repl tests.)
+- Renamed test-side field access `.type` → `.token_type` to match the header/tokenizer.c.
+- Learner fixed defects #2 (OOM check), #3 (`free` → `token_list_free`) and #4 (irrelevant
+  variable in the growth condition) unaided; all three verified by inspection. Also made
+  `increment_cursor` `static`.
+- Repaired two rename-round breakages: test field `.token_list` → `.token_list_buffer`
+  (2 lines), and the mangled `token_type_name` comment in the header (stray `}` + orphaned
+  `*/`). Also removed the dangling `move_cursor` declaration (open item 8).
+- Refreshed §6 to reflect the green build, the confirmed fixes, and the four new open items;
+  added the standing instruction to keep this file current.
+
+### New lessons (2026-10-03, later)
+
+- **A `static` function must never appear in a public header.** And you cannot fix a
+  name mismatch by renaming the declaration to match — a non-static declaration followed by a
+  static definition is itself a compile error. The only correct resolution when the
+  implementation is file-private is to delete the declaration.
+- **A function that can fail but returns `void` cannot report the failure.** The current
+  code gets the information out via a side effect (mutating `had_error`), which works but
+  leaves no room to distinguish failure *kinds* — and makes the flag sticky.
+- **A mangled `//` comment-out is a silent landmine.** Commenting out a line that also
+  contains a brace swallows the brace and orphans the `*/`. The file still compiled, so only
+  reading the header caught it.
 
 ### Docs worth keeping
 

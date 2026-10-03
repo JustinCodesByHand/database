@@ -31,18 +31,18 @@ typedef enum {
   TOKEN_STRING,
   TOKEN_IDENT,
   TOKEN_EOF,
-  TOKEN_ERROR
-} TokenType;
+  token_error
+} tokentype;
 
 typedef struct {
-  TokenType token_type;
+  tokentype token_type;
   const char *input_string;
   size_t word_length;
   size_t start_index;
 } Token;
 
 typedef struct {
-  Token *token_list;
+  Token *token_list_buffer;
   size_t total_num_tkns;
   size_t tknlst_capacity;
   /* on failure: */
@@ -54,15 +54,20 @@ typedef struct {
 typedef struct {
   const char *input_string;
   size_t cursor_position;
-  TokenList *lex_tkn_list;
+  TokenList *lex_tkn_list_struct;
 } Lexer;
 
 TokenList *tokenize(const char *input_string);
 
 void token_list_free(TokenList *foo);
 
-void move_cursor(Lexer *lexer);
+/* NOTE: `increment_cursor` is `static` in tokenizer.c, so it is file-private and
+ * deliberately NOT declared here. A declaration of it in this header would also
+ * conflict: non-static declaration following a static definition is an error. */
 
-// const char *token_type_name}(TokenType type); /* for error messages and tests
-// */
+// Disabled while the `tokentype` rename settles. Restore both this declaration AND
+// its definition in tokenizer.c (git: branch dev, commit 0efae80) — nothing may call
+// token_type_name until both exist, or it fails at link time.
+// const char *token_type_name(tokentype type); /* for error messages and tests */
+
 #endif
