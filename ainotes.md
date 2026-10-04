@@ -208,7 +208,7 @@ Header and `.c` names match **except** for the WIP field rename above.
 
 ## 6. Current state of `src/tokenizer.c`
 
-**STATUS: BUILDING AND TESTS PASSING — 5 tests, 0 failed.** First green run, 2026-10-03.
+**STATUS: BUILDING AND TESTS PASSING — 6 tests, 0 failed** (2026-10-04).
 No compile blockers remain.
 
 **Naming (final, after the WIP rename):**
@@ -282,6 +282,18 @@ interchangeable; the name is just reused.
    because nothing called either. The bogus declaration has been removed; a `static` function
    must not appear in a public header, and renaming the declaration to match would itself
    error ("non-static declaration follows static definition").
+9. **PREFIX-MATCH BUG — a word that is a prefix of a keyword is misclassified (2026-10-04).**
+   `tokenize_word` does `strncasecmp(input, "select", word_length) == 0`. `strncasecmp`
+   compares **at most `n` bytes**, so with `n = word_length` only that many characters of
+   the keyword get compared. Verified with a standalone program:
+   `SELECT`→SELECT, `SEL`→**SELECT (wrong)**, `SE`→**SELECT (wrong)**, `S`→**SELECT (wrong)**,
+   `selection`→IDENT, `users`→IDENT.
+   Fix: also require equal lengths —
+   `word_length == strlen("SELECT") && strncasecmp(input, "SELECT", word_length) == 0`.
+   `"selection"` is correct only *by accident*: its `word_length` (9) exceeds
+   `strlen("select")` (6), so the comparison hits the keyword's NUL and fails. Same
+   mechanism, opposite outcome — the length check makes both directions deliberate.
+   SQL impact: `SEL * FROM t` would silently parse as a `SELECT`.
 
 **Absent:** `peek_next`, `match`, `scan_number`, `scan_identifier`, `scan_string`.
 ---
@@ -721,3 +733,50 @@ Explained in full below — these are the three cost the most time so far.
   <https://en.cppreference.com/w/c/string/byte#Character_classification>
 - `strncasecmp` (for case-insensitive keyword matching) —
   <https://man7.org/linux/man-pages/man3/strcasecmp.3.html>
+
+---
+
+### Session 2026-10-04 — first real word token; three string bugs
+
+**Where it started:** recovered the orphaned 3PM commit, installed auto-push, added the
+`"SELECT"` checklist test.
+
+**The `SELECT` test did real work.** It exposed, in order:
+
+1. **The alpha loop never advanced the cursor** (empty body) and used `|` instead of `||`.
+   `isalpha(';') | ';'` = `0 | 59` = 59 → nonzero → true, so the condition was true for
+   nearly every char. Both halves are now gone: the condition is a single `isalpha` call,
+   so there is no bitwise/logical confusion left to get wrong. **Lesson: a loop that never
+   changes what it examines can never terminate.** Look → decide → **move**.
+2. **`#include <cstddef>` is C++**, not C (`<stddef.h>`). A C++ header in a `.c` file is
+   the classic signal that C++ syntax has crept in.
+3. **A token must never be built for a non-word.** Whitespace-only input ran the alpha loop
+   zero times, so `word_length` was 0 — but the code pushed that empty token anyway,
+   giving 2 tokens instead of 1. Fix: guard the push with `word_length != 0`.
+4. **`strncmp` is wrong for spans.** A token points *into* the caller's buffer, so
+   `strcmp(input + start, "SELECT")` keeps reading past the word — for `"SELECT * FROM"` it
+   compares `' '` against `'\0'` and reports no match. Must be length-limited. And
+   `strcasecmp` is equally wrong (still NUL-terminated); the right tool is `strncasecmp`
+   (`<strings.h>`, POSIX not ISO C).
+5. **`strncmp` returns nonzero when the strings DIFFER.** The `if (strncmp(...))` form
+   means "if this is *not* the keyword, make it the keyword" — inverted. Wants `== 0`.
+   This one had been masked: case-sensitivity made every comparison fail, and the inverted
+   logic turned that failure into "matched". Two bugs cancelling. `SELECT` passed for the
+   wrong reason; `"users"` would have come out as `TOKEN_SELECT`.
+6. **PREFIX MATCH (open item 9).** `n = word_length` compares only that many bytes of the
+   keyword, so `SEL`, `SE`, `S` all match `select`. Needs `word_length == strlen(keyword)`.
+
+**Debugging lesson:** the "memory leak" was never a leak. LeakSanitizer reported an
+abandoned allocation because the test **aborted at a failed `assert` before reaching
+`token_list_free`.** A leak report after a test failure is a *symptom*. Read the assertion
+first; fix it and the leak disappears. `assert` is live here (no `-DNDEBUG`), and `abort()`
+discards block-buffered stdout when piped — so `make test` can show *only* a leak report and
+no test output. Use `script -qec ./build/tests /dev/null` to get a pty and see the results.
+
+**Also:** your editor twice saved a stale buffer over my edits (`#include <cstddef>` and a
+`(void)starting_index;` both reappeared). Close/reopen the file before editing or you will
+keep losing work — including tests.
+
+**Environment gotcha:** `stdbuf` conflicts with ASan's `LD_PRELOAD`
+("ASan runtime does not come first in initial library list"). Use `script` for a pty
+instead.
