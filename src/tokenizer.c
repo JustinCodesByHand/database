@@ -76,6 +76,7 @@ static bool list_push(TokenList *tkn_list_struct, Token newToken) {
   }
 
   if (tkn_list_struct->had_error == true) {
+    tkn_list_struct->had_error = false; // resetting
     // TODO: assign error_msg paramaters
     return false;
   } else {

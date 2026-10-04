@@ -77,6 +77,31 @@ before trusting this table — it has been wrong before (see the warning at the 
 | `stash@{0}` | 2 deleted lines in `src/tokenizer.h` — **superseded, do not pop** |
 | `rescue-a1ce250` | safety branch I created; see incident below |
 
+### Auto-push (set up 2026-10-03 22:52)
+
+**Goal: every commit goes to `origin` automatically.**
+
+- `.git/hooks/post-commit` — installed, executable, syntax-checked, tested end-to-end.
+  Pushes to the branch's upstream after each commit. **Local only** — `.git/hooks/` is not
+  tracked by git, so it will NOT exist on another clone. To share it, copy the file or point
+  `core.hooksPath` at a dotfiles repo.
+  Skips pushing when: rebase/merge/cherry-pick in progress; HEAD detached; branch has no
+  upstream; nothing new to push; `GIT_AUTO_PUSH=0` is set.
+  On push failure it prints a warning and **keeps the commit**. It never `--force`s —
+  a diverged branch gets a `git pull --rebase` hint instead of a silent overwrite.
+  Per-commit opt-out: `GIT_AUTO_PUSH=0 git commit -m "wip"`.
+  Test it without pushing: `GIT_AUTO_PUSH_DRY_RUN=1 sh .git/hooks/post-commit`.
+- `push.autoSetupRemote=true` set globally, so new branches auto-track their remote.
+- `gh` **2.102.0** installed to `~/.local/bin/gh` (standalone binary, *not* pacman).
+  Reason: the pacman sync DB was 6 days stale with **172 pending upgrades**. Installing
+  via pacman would have forced `pacman -Syu` — a whole-system upgrade that was never
+  requested — and a bare `pacman -Sy` risks Arch's partial-upgrade breakage. The
+  standalone tarball needs no root and touches no system package.
+  **Consequence: `gh` will not be updated by pacman.** Re-download it manually, or
+  reconcile once the system is upgraded.
+- Auth was NOT yet configured. Needs `gh auth login` (interactive/browser) then
+  `gh auth setup-git` so plain `git push` — which is what the hook calls — is silent.
+
 ### INCIDENT 2026-10-03 — a real commit was orphaned by detached HEAD
 
 `a1ce250` "refactor list push" (2026-10-03 **14:48:53**) holds the entire session's
