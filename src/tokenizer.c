@@ -1,11 +1,12 @@
 #include "tokenizer.h"
 #include <assert.h>
-#include <cstddef>
 #include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 
 // looks at the character in int(current_position)
 // usage: returns singular character at cursor_position
@@ -98,6 +99,23 @@ void token_list_free(TokenList *tkn_list_struct) {
 // increrment cursor position, so peek() sees next character
 static void increment_cursor(Lexer *lexer) { lexer->cursor_position += 1; }
 
+// Lexer Helper:
+// creates and returns a new token that starts isalpha()
+static Token tokenize_word(Lexer *lexer, size_t starting_index) {
+  Token newToken;
+  newToken.start_index = starting_index;
+  newToken.word_length = lexer->cursor_position - newToken.start_index;
+  newToken.input_string = lexer->input_string + newToken.start_index;
+
+  if ((strncasecmp(newToken.input_string, "select", newToken.word_length)) ==
+      0) {
+    newToken.token_type = TOKEN_SELECT;
+  } else {
+    newToken.token_type = TOKEN_IDENT;
+  }
+  return newToken;
+}
+
 /*
  * Tokenizes `source`. The returned list points INTO `source`,
  * which must outlive the list. aaaaa
@@ -143,6 +161,15 @@ TokenList *tokenize(const char *input_string) {
       // increment the count until we encounter a space
       increment_cursor(&lexer);
     }
+    Token word_tkn = tokenize_word(&lexer, starting_index);
+    if (word_tkn.word_length != 0) {
+      list_push(lexer.lex_tkn_list_struct, word_tkn);
+    }
+
+    // TODO: the word spans [starting_index, lexer.cursor_position), so
+    //   word_length = lexer.cursor_position - starting_index
+    // Build that Token and list_push() it. Until then starting_index is
+    // captured but unused, which -Wunused-variable is (correctly) flagging.
   }
   // if we read '\0', then make EOF token and exit
   if (is_at_end(&lexer) == true) {

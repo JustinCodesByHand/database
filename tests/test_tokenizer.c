@@ -26,8 +26,24 @@ static void whitespace_only_input_is_single_eof(void) {
   token_list_free(tknlst_buffer);
 }
 
+/* [checklist] "SELECT" produces two tokens: TOKEN_SELECT then TOKEN_EOF. */
+static void select_input_is_select_then_eof(void) {
+  TokenList *tknlst = tokenize_with("SELECT");
+  ASSERT_NOT_NULL(tknlst);
+  ASSERT_EQ_INT(2, tknlst->total_num_tkns);
+
+  /* the keyword: starts at index 0 and spans the 6 characters "SELECT" */
+  ASSERT_EQ_INT(TOKEN_SELECT, tknlst->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].start_index);
+  ASSERT_EQ_INT(6, tknlst->token_list_buffer[0].word_length);
+
+  /* then the end-of-input marker */
+  ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[1].token_type);
+
+  token_list_free(tknlst);
+}
+
 /* The rest of the checklist (guide line 2610) — write these yourself:
- *   "SELECT" -> [SELECT, EOF]
  *   case-insensitive keywords
  *   "users" -> TOKEN_IDENT length 5:
  *
@@ -44,4 +60,5 @@ void suite_tokenizer(void) {
   SUITE("tokenizer");
   RUN_TEST(empty_input_is_single_eof);
   RUN_TEST(whitespace_only_input_is_single_eof);
+  RUN_TEST(select_input_is_select_then_eof);
 }
