@@ -62,18 +62,51 @@ SAN   := -fsanitize=address,undefined -fno-omit-frame-pointer
 
 ## 2. Repo / git state
 
-| Thing | Reality on disk (2026-09-28) |
-|---|---|
-| Branch | `main` |
-| HEAD | `4b84f70` "cleaning" |
-| `origin/main` | `4b84f70` (in sync, pushed) |
-| Local `parser` | **does not exist** |
-| `origin/parser` | `6f71c70` "test3" (remote only) |
-| `ch01-repl` | **does not exist**, local or remote |
-| `5ae9ff9` | the *skeleton* commit, 10 commits behind HEAD — not "Chapter 1 merged" |
+**Reality on disk as of 2026-10-03 22:25.** Re-verify with `git log --all --decorate`
+before trusting this table — it has been wrong before (see the warning at the end).
 
-Only **one file is uncommitted**: `src/tokenizer.c` (90 insertions / 18 deletions),
-which now also contains the `token_type_name` addition from this session.
+| Thing | Reality |
+|---|---|
+| Current branch | `dev` |
+| `dev` HEAD | `1d26d04` "Merge remote-tracking branch 'origin/dev' into dev" |
+| `dev` vs `origin/dev` | **ahead 3** (unpushed: `80f87ec`, `9836cf4`, `1d26d04`) |
+| `origin/dev` | `6338e98` "refactoring list_push" (2026-10-01) |
+| `main` HEAD | `8f616df` "heavy refactor and complexity reduction" |
+| `main` vs `origin/main` | ahead 2, behind 2 — diverged, needs a decision |
+| Working tree | **clean** as of the incident below |
+| `stash@{0}` | 2 deleted lines in `src/tokenizer.h` — **superseded, do not pop** |
+| `rescue-a1ce250` | safety branch I created; see incident below |
+
+### INCIDENT 2026-10-03 — a real commit was orphaned by detached HEAD
+
+`a1ce250` "refactor list push" (2026-10-03 **14:48:53**) holds the entire session's
+work — `ainotes.md`, `src/tokenizer.c`, `src/tokenizer.h`, `tests/test_tokenizer.c`,
+**239 insertions / 126 deletions**. It matches the session diff exactly. It is **not**
+reachable from any branch.
+
+Cause, reconstructed from `git reflog --date=iso`:
+
+| Time | Event | Effect |
+|---|---|---|
+| 12:22:48 | `git checkout 9836cf4...` (a **raw SHA**) | **detached HEAD**; `dev` stays at `9836cf4` |
+| 14:48:53 | `commit: refactor list push` | `a1ce250` created *on the detached HEAD* |
+| 14:49:24 | `checkout: moving from a1ce250... to dev` | back to branch `dev` at `9836cf4`; **`a1ce250` now unreferenced** |
+
+The giveaway is the reflog text itself: `checkout: moving from a1ce250… to dev`
+means the branch was *not* where the commit was.
+
+**Recovered:** safety branch `rescue-a1ce250` created immediately, so `git gc` cannot
+collect the object. Recovery onto `dev` is `git cherry-pick rescue-a1ce250`
+(base `9836cf4` **is** an ancestor of `dev`, so the base is clean).
+
+**Expect conflicts:** `dev` also contains `6338e98` "refactoring list_push", which
+rewrote the same `src/tokenizer.c` (122 lines) and `src/tokenizer.h` (6 lines).
+Both sides refactored `list_push`/`grow_list_capisity`, so `tokenizer.c` and
+`tokenizer.h` will conflict and must be resolved by hand.
+
+Also note `dev` now holds **two functionally identical merge commits** (`9836cf4`
+and `1d26d04`) — at 22:22 a merge was replayed via `rebase` + `cherry-pick`. History
+is messy but not broken; leave it alone unless asked to tidy.
 
 A prior briefing claimed branch `parser`, `main` at `5ae9ff9`, and a merged
 `ch01-repl` branch. All three were wrong for this checkout. **Verify git state
@@ -368,6 +401,51 @@ inside a nested switch you would need a flag or `goto`.
 - **Where should the failure surface?** `tokenize` returning `NULL`, or returning the
   list with `had_error = true`? Note: if `tokenize` returns `NULL`, the caller has no
   list left to read `had_error` from. **Still unanswered — decide this.**
+
+---
+
+### Git: detached HEAD silently orphans commits (learned 2026-10-03, the hard way)
+
+A commit can vanish from every branch and still be perfectly intact. The mechanism:
+
+1. `git checkout <raw-sha>` moves you to that commit **without moving any branch**.
+   You are now in *detached HEAD*. `git status` says `HEAD detached at 9836cf4`.
+2. You commit. The new commit is created **on the detached HEAD only**. No branch
+   points at it. Nothing warns you.
+3. `git checkout <branch>` returns you to the branch, which is still at the *old*
+   commit. Your new commit is now **unreachable**.
+
+Symptom: you committed, `git log` on your branch doesn't show it, and the working
+tree looks like the changes vanished.
+
+**How to spot it:** `git reflog --date=iso`. The reflog records commits that no branch
+points at. If reflog shows `commit: <msg>` followed later by
+`checkout: moving from <that-sha>… to <branch>`, that's exactly this.
+
+**Prevention:**
+- `git checkout <branch>` before committing. To resume a commit you already made from a
+  SHA, `git checkout -b <new-branch> <sha>`.
+- `git switch <branch>` is better than `git checkout` here — it refuses to leave a branch
+  with uncommitted work, and its detached-HEAD message is louder.
+- `git status` first line tells you immediately: `On branch dev` vs `HEAD detached at …`.
+- `git config --global advice.detachedHead false` turns the warning **off** — do not do
+  this. That warning is the only thing standing between you and this exact situation.
+
+**Recovery ladder** (least destructive first):
+1. `git reflog` → find the SHA. It is **not** gone; it survives until `git gc` prunes
+   unreachable objects (default grace period: 2 weeks).
+2. `git branch rescue-<sha> <sha>` — pins it so gc can never take it. *Do this first,
+   before any experimentation.*
+3. `git cherry-pick rescue-<sha>` to apply it onto your branch, or
+   `git merge rescue-<sha>` if a merge is more honest about the history.
+4. Last resort: `git diff <sha>~1 <sha> > /tmp/work.patch` to extract the work as a file,
+   then apply it by hand.
+
+**Never** `git reset --hard` a branch to "get the commit back" — that discards whatever
+else the branch has gained. Recover *forward*, not backward.
+
+A dangling commit is not a lost commit. Check `git reflog` before believing anything is
+gone.
 
 ---
 
