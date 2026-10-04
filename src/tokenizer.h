@@ -35,11 +35,10 @@ typedef enum {
 } TokenType;
 
 typedef struct {
-  TokenType type;
-  const char
-      *start; /* points into the source. NOT owned. NOT NUL-terminated. */
+  TokenType token_type;
+  const char *input_string;
   size_t word_length;
-  size_t position;
+  size_t start_index;
 } Token;
 
 typedef struct {
@@ -53,17 +52,17 @@ typedef struct {
 } TokenList;
 
 typedef struct {
-  const char *source;
+  const char *input_string;
   size_t cursor_position;
   TokenList *lex_tkn_list;
 } Lexer;
-/*
- * Tokenizes `source`. The returned list points INTO `source`,
- * which must outlive the list.
- * CALLER OWNS the result — call token_list_free().
- */
-TokenList *tokenize(const char *source);
+
+TokenList *tokenize(const char *input_string);
+
 void token_list_free(TokenList *foo);
 
-const char *token_type_name(TokenType type); /* for error messages and tests */
+void move_cursor(Lexer *lexer);
+
+// const char *token_type_name}(TokenType type); /* for error messages and tests
+// */
 #endif
