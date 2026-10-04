@@ -1,5 +1,6 @@
 #include "tokenizer.h"
 #include <assert.h>
+#include <cstddef>
 #include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -54,7 +55,6 @@ static void grow_list_capisity(TokenList *tkn_list_struct) {
 // Helper for list_push
 // assigns new token valies to next index in the tkn_list_struct
 static void add_tkn_to_tknlist(TokenList *tkn_list_struct, Token newToken) {
-  tkn_list_struct->total_num_tkns += 1;
   // append tokenDATA to TokenList
   tkn_list_struct->token_list_buffer[tkn_list_struct->total_num_tkns - 1]
       .token_type = newToken.token_type;
@@ -76,10 +76,10 @@ static bool list_push(TokenList *tkn_list_struct, Token newToken) {
   }
 
   if (tkn_list_struct->had_error == true) {
-    tkn_list_struct->had_error = false; // resetting
     // TODO: assign error_msg paramaters
     return false;
   } else {
+    tkn_list_struct->total_num_tkns += 1;
     add_tkn_to_tknlist(tkn_list_struct, newToken);
     return true;
   }
@@ -136,8 +136,12 @@ TokenList *tokenize(const char *input_string) {
 
     // TODO: index into the string using
     // tokens's word_length, start_index,*input_string
-    while (isalpha((unsigned char)peek(&lexer)) | peek(&lexer)) {
+    //
+    size_t starting_index = lexer.cursor_position;
+
+    while (isalpha((unsigned char)peek(&lexer))) {
       // increment the count until we encounter a space
+      increment_cursor(&lexer);
     }
   }
   // if we read '\0', then make EOF token and exit
@@ -145,12 +149,11 @@ TokenList *tokenize(const char *input_string) {
     Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
     bool add_to_list = list_push(lexer.lex_tkn_list_struct, eof_tkn);
 
-    if (!add_to_list) {
-      token_list_free(lexer.lex_tkn_list_struct);
-      // TODO:return error message
+    if (!add_to_list && (lexer.lex_tkn_list_struct->had_error == true)) {
+      lexer.lex_tkn_list_struct->had_error = false;
+      fprintf(stderr, "%s", "errorrrr");
       return NULL;
     }
-    // exits loop if append eof token
   }
 
   return lexers_tkn_list;
