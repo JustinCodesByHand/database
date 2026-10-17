@@ -55,6 +55,39 @@ SAN   := -fsanitize=address,undefined -fno-omit-frame-pointer
 
 **Every warning is fatal** (`-Werror`). Treat a warning as a stopped build, not noise.
 
+### Debugging (VS Code) — set up 2026-10-16
+
+**Binaries:** `build/tests` (`make build/tests`), `build/minidb` (`make build/minidb`),
+`build/scratch` (`make build/scratch`). Note `make test` **builds and runs**; the file
+target `make build/tests` **builds only**. Use the file target for a `preLaunchTask`,
+otherwise the task runs the program once and then the debugger runs it again.
+
+`.vscode/` is **gitignored** (`.gitignore:11`), so these configs are local and will not
+survive a fresh clone. Files, all valid JSON and verified with the commands VS Code runs:
+
+- `launch.json` — 3 `cppdbg` configs (`MIMode: gdb`, since gdb is installed and
+  codelldb/lldb are not), each with a matching `preLaunchTask`.
+- `tasks.json` — `make build/tests`, `make build/minidb`, `make build/scratch`, `make test`.
+  Every task declares `"problemMatcher": ["$gcc"]`; **a `preLaunchTask` without one can hang
+  VS Code before launch.**
+- `c_cpp_properties.json` — was **0 bytes**, which is invalid JSON and makes the C/C++
+  extension error out. Now populated for IntelliSense. (No `compile_commands.json` exists,
+  so that field was deliberately omitted.)
+
+**The original failure:** three extensions had each written a launch config and the active
+one pointed at `tests/build/Debug/outDebug` — the **C/C++ Runner** extension's convention.
+That extension never reads the Makefile, and `settings.json` was entirely `C_Cpp_Runner.*`.
+The Runner is for single-file projects; for a Makefile project use plain `cppdbg` + tasks.
+
+**`tests/scratch.c` was broken by the rename** and is now fixed: `TokenType`→`tokentype`,
+`TokenList.token_list`→`token_list_buffer`, `Token.position`→`start_index`,
+`TOKEN_ERROR`→`token_error`. It is the ideal first debug target — a debugger you can point
+at any string:
+
+```sh
+make build/scratch && ./build/scratch SELECT
+```
+
 > Why WSL was needed once: Git Bash's gcc is MinGW and lacks POSIX
 > `fmemopen`/`open_memstream`. On native Linux that constraint is gone.
 
@@ -268,8 +301,16 @@ interchangeable; the name is just reused.
 5. **`token_type_name` was deleted from `tokenizer.c`.** Its declaration in the header is
    commented out (the comment-out was mangled — a stray `}` and an orphaned `*/` — since
    repaired into a deliberate note). Nothing calls it, so the build passes; any future caller
-   fails at **link** time. **Recover from git: branch `dev`, commit `0efae80`** rather than
-   rewriting. Remember it must be updated for the `TokenType` → `tokentype` rename.
+   fails at **link** time.
+   **CORRECTION 2026-10-16: it is NOT lost.** The full 27-case body survives verbatim in
+   `tests/scratch.c` as `scratch_type_name` (line ~25). My earlier claims of "recover from
+   `0efae80`" and then "no commit contains the body, treat as a rewrite" were both **wrong**:
+   the string `token_type_name` only ever appeared there in a *comment*, so a `git grep` for
+   the name missed the function, which is spelled `scratch_type_name`. To implement it:
+   rename the function, move it to `tokenizer.c`, and fix `case TOKEN_ERROR:` → `case
+   token_error:` (the enum value is lowercase). Delete the scratch copy and call the real one.
+   It still has `default: return "UNKNOWN"`, which was a deliberate design choice to be
+   reconsidered — see §7.
 6. **`grow_list_capisity` returns `void`.** Failure travels as a side effect (mutating
    `had_error`) rather than a return value. Works, but the function that can fail cannot report it.
 7. **`had_error` is sticky — never reset.** Once true, `list_push` returns `false` for every
@@ -780,3 +821,40 @@ keep losing work — including tests.
 **Environment gotcha:** `stdbuf` conflicts with ASan's `LD_PRELOAD`
 ("ASan runtime does not come first in initial library list"). Use `script` for a pty
 instead.
+
+---
+
+### Session 2026-10-16 — VS Code debugging; the 27-case body is found
+
+**Goal:** debug `make test` in VS Code. It did not work.
+
+**Root cause:** three extensions had each written a launch config, and the active one had
+`"program": ".../tests/build/Debug/outDebug"` — the C/C++ Runner extension's build
+convention, pointing at a file that does not exist. The Runner never reads the Makefile;
+`settings.json` was 100% `C_Cpp_Runner.*`. Also `c_cpp_properties.json` was **0 bytes**
+(invalid JSON). Fixed by writing a plain `cppdbg` + `tasks.json` setup aimed at
+`build/tests`, `build/minidb`, `build/scratch`.
+
+**Discovery that corrects two earlier claims.** `tests/scratch.c` contains the **complete
+27-case `scratch_type_name`** — i.e. the `token_type_name` body I twice reported as lost.
+The name never matched a `git grep token_type_name` because it is spelled
+`scratch_type_name`; the only occurrence of the literal string `token_type_name` in that file
+is a **comment**. Lesson: grepping for a *name* cannot find a function that was renamed, and
+"no commit contains it" was a conclusion drawn from that failed search. **Search for the
+shape (a `switch` over `tokentype`), not the name.**
+
+`scratch.c` was itself broken by the rename and is now fixed: `TokenType`→`tokentype`,
+`TokenList.token_list`→`token_list_buffer`, `Token.position`→`start_index`,
+`TOKEN_ERROR`→`token_error`. It is the best first debug target:
+
+```sh
+make build/scratch && ./build/scratch SELECT
+```
+
+**Makefile trap:** `make test` builds **and runs**; `make build/tests` builds **only**.
+A `preLaunchTask` must use the file target, or the task runs the program and then the
+debugger launches it a second time. And every `preLaunchTask` needs a `problemMatcher`
+(`$gcc`) or VS Code can hang before ever reaching the debugger.
+
+**`token_type_name` is therefore recoverable** — rename, move to `tokenizer.c`, change
+`case TOKEN_ERROR:` to `case token_error:`, and reconcile the `default:` (see §7). No rewrite.
