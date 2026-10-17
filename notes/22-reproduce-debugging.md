@@ -13,8 +13,11 @@ scripts/setup-nvim-dap.sh
 It is **idempotent** and backs up anything it would overwrite. It:
 
 1. enables the `dap.core` extra in `lua/config/lazy.lua` (inserted right after the
-   `lazyvim.plugins` import, so it precedes `plugins/`), and
-2. writes `lua/plugins/dap.lua`.
+   `lazyvim.plugins` import, so it precedes `plugins/`),
+2. writes `lua/plugins/dap.lua`, and
+3. moves aside any **legacy `type = "executable"` codelldb adapter** (at `dap.lua`,
+   `lua/dap.lua` or `after/plugin/dap.lua`) — those cause a *port error*; see
+   [23-debug-lazyvim-troubleshoot](23-debug-lazyvim-troubleshoot.md).
 
 Then, inside Neovim: `:MasonInstall codelldb`, `:Lazy sync`, and restart.
 

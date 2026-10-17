@@ -12,6 +12,10 @@
 #   1. enables the LazyVim "dap.core" extra in lua/config/lazy.lua
 #   2. writes lua/plugins/dap.lua, which points codelldb at build/tests,
 #      build/minidb and build/scratch (the same binaries VS Code debugs)
+#   3. moves aside any LEGACY codelldb adapter (type = "executable") found at
+#      ~/.config/nvim/dap.lua, lua/dap.lua or after/plugin/dap.lua. Such a file
+#      hands codelldb the literal "${port}" (nvim-dap only substitutes it for
+#      type = "server"), which fails with a "port error".
 #
 # After running it, inside Neovim:
 #   :MasonInstall codelldb     (skip if already installed)
@@ -166,6 +170,18 @@ else
   chmod 0644 "$DAP" # mktemp creates 0600; normalise so it matches a normal config file
   echo "ok:   wrote $DAP"
 fi
+
+# 3. Neutralise legacy/conflicting codelldb adapters. nvim-dap substitutes the
+#    ${port} placeholder ONLY for `type = "server"` adapters. An old-style
+#    `type = "executable"` adapter that still passes ${port} gives codelldb the
+#    literal string and it dies with a port error. Move such files aside so the
+#    adapter written in step 2 is the only one in play.
+for f in "$NVIM/dap.lua" "$NVIM/lua/dap.lua" "$NVIM/after/plugin/dap.lua"; do
+  if [[ -f "$f" ]] && grep -qE "type[[:space:]]*=[[:space:]]*[\"']executable[\"']" "$f"; then
+    mv "$f" "$f.legacy.$STAMP"
+    echo "ok:   moved legacy executable-type adapter aside: $f -> $f.legacy.$STAMP"
+  fi
+done
 
 cat <<'NEXT'
 

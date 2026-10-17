@@ -48,6 +48,12 @@ whitespace, alphabetic words, `*`, and EOF. Unknown characters are consumed and 
 as real tokens. Details: [41-tokenizer-state](notes/41-tokenizer-state.md),
 [60-open-items](notes/60-open-items.md).
 
+**Also open (debugging):** a DAP **"port error"** on the *second laptop* only. Root cause is
+almost certainly a legacy `type = "executable"` codelldb adapter there (nvim-dap only substitutes
+`${port}` for `type = "server"`). Diagnosis, checks, and the fix:
+[23-debug-lazyvim-troubleshoot](notes/23-debug-lazyvim-troubleshoot.md). Verified **no** port
+problem on the primary machine.
+
 ### How to keep these notes
 
 **STANDING INSTRUCTION (from the learner, 2026-10-03):** update the notes after *every*

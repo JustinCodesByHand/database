@@ -391,3 +391,29 @@ why lazygit "forgot" the token). Options given: (A) switch `origin` to SSH (an u
 (C) unlock the keyring (recurs after reboot without PAM integration). `origin/dev` now carries
 `94efd02`, so a push has since succeeded — treat the auth state as resolved but verify before
 relying on it.
+
+## Session 2026-10-16 (later still) — DAP "port error" investigation
+
+Learner reported a **"port error" from DAP when starting the debugger**. Investigated on the
+primary machine:
+
+- Registered adapter is correct: `type = "server"`, `port = "${port}"`, command =
+  `~/.local/share/nvim/mason/bin/codelldb` (written by `lua/plugins/dap.lua`).
+- codelldb supports `--port`; `codelldb --port 55123` **listens** on `127.0.0.1:55123`.
+  (`codelldb --version` is unsupported — errors, expected.)
+- A headless launch of `build/tests` completed the handshake — `~/.local/state/nvim/dap.log`
+  shows codelldb connecting and the debuggee starting via
+  `codelldb-launch --connect=127.0.0.1:43933`. So **no port problem on the primary machine**.
+- Found `~/.config/nvim/dap.lua` (nvim config ROOT, outside `lua/`) defining an OLD
+  `type = "executable"` codelldb adapter that passes `${port}`. It is **not** loaded here
+  (verify: `require` searchpath does not include config-root `dap.lua`), but it is the classic
+  cause of the port error where it *is* loaded: nvim-dap only substitutes `${port}` for
+  `type = "server"`, so `type = "executable"` sends the literal `${port}` to codelldb.
+
+Root cause (on the second laptop) is therefore almost certainly a stray/legacy executable-type
+adapter at `dap.lua`, `lua/dap.lua`, or (worst) `after/plugin/dap.lua`. Wrote a full diagnosis +
+checks into [23-debug-lazyvim-troubleshoot](23-debug-lazyvim-troubleshoot.md) (new "port error"
+section), and hardened `scripts/setup-nvim-dap.sh` with a step 3 that moves such legacy files
+aside (backed up, not deleted). Updated [22-reproduce-debugging](22-reproduce-debugging.md) and
+the root focus. `bash -n` clean; step-3 logic dry-run-tested. Pushed so the other laptop can
+pick this up.

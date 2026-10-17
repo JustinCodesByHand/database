@@ -7,6 +7,102 @@ why. For the happy-path setup (the automated script), see
 
 If DAP won't work in Neovim on your second laptop, do these in order. Don't skip anything. Share the outputs if it still fails.
 
+## Known issue: "port error" when starting the debugger
+
+**Symptom:** pressing `<leader>dc` produces something like
+`invalid value '${port}' for '--port <PORT>'`, or `Could not connect to adapter on port …`, or
+codelldb exits immediately.
+
+**Why it happens.** nvim-dap substitutes the `${port}` placeholder **only** for adapters declared
+with `type = "server"`. An older declaration uses `type = "executable"` (or `"pipe"`) while still
+passing `args = { "--port", "${port}" }`. Then the literal string `${port}` is handed to
+codelldb, which rejects it — a **port error before any debugging happens**.
+
+**There must be exactly ONE codelldb adapter, and it must be `type = "server"`.** Find them all:
+
+```sh
+grep -rn "codelldb" ~/.config/nvim --include='*.lua'
+```
+
+**Good** definition (from `lua/plugins/dap.lua`, written by `scripts/setup-nvim-dap.sh`):
+
+```lua
+dap.adapters.codelldb = {
+  type = "server",
+  host = "localhost",
+  port = "${port}",
+  executable = { command = codelldb, args = { "--port", "${port}" } },
+}
+```
+
+**Bad / legacy** definition — this is what throws the port error (note `type = "executable"`):
+
+```lua
+dap.adapters.codelldb = {
+  type = "executable",
+  command = "codelldb",
+  args = { "--port", "${port}", "--non-interactive" },
+}
+```
+
+**Files that can smuggle in the bad version** (any of these existing is a problem):
+
+| Path | Loaded how |
+|---|---|
+| `~/.config/nvim/dap.lua` | NOT auto-loaded from here on the primary machine (outside `lua/`), but easy to copy in and confuse |
+| `~/.config/nvim/lua/dap.lua` | **`require`-able — dangerous** |
+| `~/.config/nvim/after/plugin/dap.lua` | **auto-loaded after plugins — most dangerous** |
+
+**Fix:** move any legacy file aside and restart Neovim:
+
+```sh
+mv ~/.config/nvim/dap.lua            ~/.config/nvim/dap.lua.legacy 2>/dev/null
+mv ~/.config/nvim/lua/dap.lua        ~/.config/nvim/lua/dap.lua.legacy 2>/dev/null
+mv ~/.config/nvim/after/plugin/dap.lua ~/.config/nvim/after/plugin/dap.lua.legacy 2>/dev/null
+```
+
+`scripts/setup-nvim-dap.sh` now does this automatically (backs up, does not delete) as its step 3.
+Re-run it on the second laptop, then `:Lazy sync` and restart.
+
+**Confirm which adapter is actually registered** (run in a repo dir):
+
+```sh
+nvim --headless -c "lua require('lazy').load({plugins={'nvim-dap'}}); print(vim.inspect(require('dap').adapters.codelldb))" -c "qa!" 2>&1 | tail -20
+```
+
+It must print `type = "server"` and `port = "${port}"`. If it shows `type = "executable"`, some
+other file won the race — find it with the grep above.
+
+**Verify codelldb itself** (independent of Neovim):
+
+```sh
+~/.local/share/nvim/mason/bin/codelldb --help              # must list --port
+~/.local/share/nvim/mason/bin/codelldb --port 55123 &      # should LISTEN
+ss -ltnp | grep 55123                                      # 127.0.0.1:55123
+kill %1
+```
+
+### What we verified on the PRIMARY machine (2026-10-16)
+
+- The registered adapter **is** `type = "server"`, `port = "${port}"`, codelldb at the mason path.
+- `codelldb --port 55123` **listens** on `127.0.0.1:55123`; `--help` lists `--port`.
+  (`codelldb --version` is **not** supported — it errors `unexpected argument found`, so a
+  "version check" failing is expected, not a bug.)
+- A headless launch of `build/tests` completed the whole handshake: `~/.local/state/nvim/dap.log`
+  shows codelldb connecting and the debuggee launching via
+  `codelldb-launch --connect=127.0.0.1:43933`.
+- Therefore the primary machine has **no** port problem. The error is specific to the **second
+  laptop**, and the difference is almost certainly a stray/legacy adapter file there.
+
+**Capture the real error on the second laptop** — this is the fastest way to a definitive fix:
+
+```vim
+:lua require('dap').set_log_level('DEBUG')
+" reproduce the failure, then:
+:messages
+:edit ~/.local/state/nvim/dap.log
+```
+
 ## 1) Check Neovim and LazyVim are there
 ```sh
 nvim --version | head -2
