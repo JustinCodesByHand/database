@@ -417,3 +417,37 @@ section), and hardened `scripts/setup-nvim-dap.sh` with a step 3 that moves such
 aside (backed up, not deleted). Updated [22-reproduce-debugging](22-reproduce-debugging.md) and
 the root focus. `bash -n` clean; step-3 logic dry-run-tested. Pushed so the other laptop can
 pick this up.
+
+## Session 2026-10-17 — DAP "port error" root cause found and fixed
+
+Learner asked to search the LazyVim debug config using the new note 23. Ran note 23's core check:
+
+```sh
+grep -rn "dap.adapters.codelldb" ~/.config/nvim --include='*.lua'
+```
+
+It found **two** files defining the adapter:
+`lua/plugins/dap.lua` (the script's correct one, with a mason-path fallback) and
+`lua/plugins/dap-c.lua` (an old hand-written leftover). Note 23's three known-bad paths
+(`dap.lua`, `lua/dap.lua`, `after/plugin/dap.lua`) did not include this one.
+
+Verified which spec won:
+
+```sh
+nvim --headless -c "lua require('lazy').load({plugins={'nvim-dap'}}); for _,c in ipairs(require('dap').configurations.c) do print(c.name) end" -c "qa!"
+# -> Debug build/tests / Debug build/scratch  (dap-c.lua's stale configs, NOT "minidb: ...")
+```
+
+So this was **not** the `type = "executable"` port bug the notes expected. It was a
+**duplicate-adapter** bug: `dap-c.lua` won the load race and replaced both the adapter and the
+configurations. Its adapter used `command = vim.fn.exepath("codelldb")` with **no mason
+fallback** — where that is `""`, codelldb cannot start, which is the port error.
+
+Fix: moved `lua/plugins/dap-c.lua` aside (`*.legacy.<timestamp>`). Re-checked: configs are now
+`minidb: build + debug tests/minidb/scratch`, adapter `type = "server"`, command
+`~/.local/share/nvim/mason/bin/codelldb`.
+
+Hardened `scripts/setup-nvim-dap.sh` step 3: instead of three hard-coded paths it now greps
+every `*.lua` under `~/.config/nvim` for `dap.adapters.codelldb` and moves aside any file except
+the one it wrote. `bash -n` clean; ran twice — second run reports `already up to date` and moves
+nothing (idempotent). Updated notes 22, 23 and the root focus.

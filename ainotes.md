@@ -3,7 +3,7 @@
 **Purpose:** handoff notes for AI-assisted sessions on MiniDB, split into a tree so a
 session reads only what its task needs instead of the whole log.
 
-**Last updated:** 2026-10-16
+**Last updated:** 2026-10-17
 **Working directory:** `/home/jcmac/code/database`
 
 ---
@@ -48,9 +48,11 @@ whitespace, alphabetic words, `*`, and EOF. Unknown characters are consumed and 
 as real tokens. Details: [41-tokenizer-state](notes/41-tokenizer-state.md),
 [60-open-items](notes/60-open-items.md).
 
-**Also open (debugging):** a DAP **"port error"** on the *second laptop* only. Root cause is
-almost certainly a legacy `type = "executable"` codelldb adapter there (nvim-dap only substitutes
-`${port}` for `type = "server"`). Diagnosis, checks, and the fix:
+**Also open (debugging):** a DAP **"port error"** on the *second laptop* only. Root cause found
+(2026-10-17): a leftover `lua/plugins/dap-c.lua` defined a **second** `dap.adapters.codelldb`,
+won the load race, and clobbered the good adapter (its `exepath("codelldb")` had no mason
+fallback). Not the old `type = "executable"` case. Fixed by moving it aside; `setup-nvim-dap.sh`
+step 3 now moves aside *any* other file defining the adapter. Full diagnosis and checks:
 [23-debug-lazyvim-troubleshoot](notes/23-debug-lazyvim-troubleshoot.md). Verified **no** port
 problem on the primary machine.
 

@@ -21,8 +21,11 @@ codelldb, which rejects it — a **port error before any debugging happens**.
 **There must be exactly ONE codelldb adapter, and it must be `type = "server"`.** Find them all:
 
 ```sh
-grep -rn "codelldb" ~/.config/nvim --include='*.lua'
+grep -rn "dap.adapters.codelldb" ~/.config/nvim --include='*.lua'
 ```
+
+(Also worth a broader `grep -rn "codelldb" ~/.config/nvim --include='*.lua'` to catch `type = "executable"`
+definitions and `dap.configurations` duplicates.)
 
 **Good** definition (from `lua/plugins/dap.lua`, written by `scripts/setup-nvim-dap.sh`):
 
@@ -45,20 +48,34 @@ dap.adapters.codelldb = {
 }
 ```
 
-**Files that can smuggle in the bad version** (any of these existing is a problem):
+**Files that can smuggle in a second adapter** (any of these existing is a problem):
 
 | Path | Loaded how |
 |---|---|
 | `~/.config/nvim/dap.lua` | NOT auto-loaded from here on the primary machine (outside `lua/`), but easy to copy in and confuse |
 | `~/.config/nvim/lua/dap.lua` | **`require`-able — dangerous** |
 | `~/.config/nvim/after/plugin/dap.lua` | **auto-loaded after plugins — most dangerous** |
+| `~/.config/nvim/lua/plugins/*.lua` (any other spec) | **merged with the LazyVim spec — a duplicate `mfussenegger/nvim-dap` block can win the load race** |
 
-**Fix:** move any legacy file aside and restart Neovim:
+The `lua/plugins/` case is not hypothetical: a leftover `lua/plugins/dap-c.lua` (an early
+hand-written config) declared its *own* `mfussenegger/nvim-dap` spec with
+`command = vim.fn.exepath("codelldb")` and **no mason fallback**. It won the merge, so the
+registered configs became its stale `Debug build/tests` / `Debug build/scratch` instead of the
+script's `minidb: build + debug …`. On any machine where `exepath("codelldb")` is `""` (mason
+`bin/` not on Neovim's PATH) the command is empty, codelldb never starts, and that is the
+**port error**. The script's own `dap.lua` has the mason fallback — the leftover file destroyed
+it. This is *not* a `${port}`-substitution bug; it is a duplicate-adapter bug.
+
+**Fix:** move any such file aside and restart Neovim:
 
 ```sh
-mv ~/.config/nvim/dap.lua            ~/.config/nvim/dap.lua.legacy 2>/dev/null
-mv ~/.config/nvim/lua/dap.lua        ~/.config/nvim/lua/dap.lua.legacy 2>/dev/null
-mv ~/.config/nvim/after/plugin/dap.lua ~/.config/nvim/after/plugin/dap.lua.legacy 2>/dev/null
+mv ~/.config/nvim/dap.lua                  ~/.config/nvim/dap.lua.legacy 2>/dev/null
+mv ~/.config/nvim/lua/dap.lua              ~/.config/nvim/lua/dap.lua.legacy 2>/dev/null
+mv ~/.config/nvim/after/plugin/dap.lua     ~/.config/nvim/after/plugin/dap.lua.legacy 2>/dev/null
+# any *other* plugin spec that also defines the adapter (e.g. a leftover dap-c.lua):
+grep -rl "dap.adapters.codelldb" ~/.config/nvim/lua/plugins --include='*.lua' \
+  | grep -v '/dap\.lua$'
+# then move each of those aside too
 ```
 
 `scripts/setup-nvim-dap.sh` now does this automatically (backs up, does not delete) as its step 3.
@@ -93,6 +110,31 @@ kill %1
   `codelldb-launch --connect=127.0.0.1:43933`.
 - Therefore the primary machine has **no** port problem. The error is specific to the **second
   laptop**, and the difference is almost certainly a stray/legacy adapter file there.
+
+### Root cause found (2026-10-17)
+
+On the other machine the two-adapter bug was real, and it was case (b) above, **not**
+`type = "executable"`: a leftover `~/.config/nvim/lua/plugins/dap-c.lua` defined its own
+`mfussenegger/nvim-dap` spec and **won the merge**, replacing both the adapter and the
+configurations. Evidence:
+
+```sh
+$ grep -rn "dap.adapters.codelldb" ~/.config/nvim --include='*.lua'
+lua/plugins/dap-c.lua:26:      dap.adapters.codelldb = { ... }
+lua/plugins/dap.lua:17:        dap.adapters.codelldb = { ... }
+
+$ nvim --headless -c "lua require('lazy').load({plugins={'nvim-dap'}}); for _,c in ipairs(require('dap').configurations.c) do print(c.name) end" -c "qa!"
+Debug build/tests      # <- dap-c.lua's stale configs, not "minidb: ..."
+Debug build/scratch
+```
+
+`dap-c.lua` used `command = vim.fn.exepath("codelldb")` with **no mason fallback**; wherever
+that returns `""`, codelldb cannot start → port error. Moving `dap-c.lua` aside and re-running
+`scripts/setup-nvim-dap.sh` restored the `minidb: build + debug …` configs and the adapter
+command `/home/jcmacey/.local/share/nvim/mason/bin/codelldb`. `scripts/setup-nvim-dap.sh` step 3
+now detects **any** such file (it greps every `*.lua` under `~/.config/nvim` for
+`dap.adapters.codelldb`, except the file it just wrote), not only the three legacy paths.
+
 
 **Capture the real error on the second laptop** — this is the fastest way to a definitive fix:
 

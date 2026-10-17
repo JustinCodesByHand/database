@@ -171,17 +171,22 @@ else
   echo "ok:   wrote $DAP"
 fi
 
-# 3. Neutralise legacy/conflicting codelldb adapters. nvim-dap substitutes the
-#    ${port} placeholder ONLY for `type = "server"` adapters. An old-style
-#    `type = "executable"` adapter that still passes ${port} gives codelldb the
-#    literal string and it dies with a port error. Move such files aside so the
-#    adapter written in step 2 is the only one in play.
-for f in "$NVIM/dap.lua" "$NVIM/lua/dap.lua" "$NVIM/after/plugin/dap.lua"; do
-  if [[ -f "$f" ]] && grep -qE "type[[:space:]]*=[[:space:]]*[\"']executable[\"']" "$f"; then
-    mv "$f" "$f.legacy.$STAMP"
-    echo "ok:   moved legacy executable-type adapter aside: $f -> $f.legacy.$STAMP"
-  fi
-done
+# 3. Neutralise legacy/conflicting codelldb adapters. There must be exactly ONE
+#    `dap.adapters.codelldb`, and it must be `type = "server"`. Two ways a second
+#    one appears and breaks debugging:
+#      a. an old `type = "executable"` adapter that still passes ${port}: nvim-dap
+#         only substitutes ${port} for `type = "server"`, so codelldb receives the
+#         literal string and dies -> "port error";
+#      b. a duplicate spec elsewhere under lua/plugins/ (e.g. dap-c.lua) that wins
+#         the load race and clobbers the good adapter -- often one with no mason
+#         fallback, so `exepath("codelldb")` is "" and the adapter can't start.
+#    Move ANY other file that defines the adapter aside, so the one written in
+#    step 2 is the only one in play.
+while IFS= read -r f; do
+  [[ -z "$f" || "$f" == "$DAP" ]] && continue
+  mv "$f" "$f.legacy.$STAMP"
+  echo "ok:   moved conflicting codelldb adapter aside: $f -> $f.legacy.$STAMP"
+done < <(grep -rlE "dap\.adapters\.codelldb" "$NVIM" --include='*.lua' 2>/dev/null | sort)
 
 cat <<'NEXT'
 
