@@ -68,7 +68,7 @@ static void add_tkn_to_tknlist(TokenList *tkn_list_struct, Token newToken) {
 }
 
 // lexer Helper that adds new tokens to its list
-// realloc memory if list grows to big
+// realloc memory if list grows to bigggg
 //  transfers data from new token to tokenlist
 static bool list_push(TokenList *tkn_list_struct, Token newToken) {
 
