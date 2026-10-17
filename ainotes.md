@@ -127,6 +127,91 @@ Verified headlessly (all four passed): config files compile, `nvim-dap` + `nvim-
 `dap.adapters.codelldb` resolves to the mason binary, the three `program()` calls build and
 return executable paths, and a real session fires `DAP_EVENT_INITIALIZED` → `DAP_EVENT_EXITED`.
 
+### Reproduce on another machine
+
+`scripts/setup-nvim-dap.sh` (added 2026-10-16) does both steps idempotently: it inserts the
+`dap.core` import into `lua/config/lazy.lua` (right after the `lazyvim.plugins` import, so it
+precedes `plugins/`), and writes `lua/plugins/dap.lua`. It backs up anything it would
+overwrite and does nothing on a second run. Then, in Neovim: `:MasonInstall codelldb` and
+`:Lazy sync`, and restart. Verified against a sandbox `XDG_CONFIG_HOME` (insert position
+correct; second run all `already`). It assumes Neovim + LazyVim already exist.
+
+### nvim-dap keys (LazyVim defaults)
+
+| Key | Action | | Key | Action |
+|---|---|---|---|---|
+| `<leader>db` | toggle breakpoint | | `<leader>di` | step **i**nto |
+| `<leader>dB` | conditional breakpoint | | `<leader>do` | step **o**ut |
+| `<leader>dc` | run / continue | | `<leader>dO` | step **O**ver |
+| `<leader>da` | run with args | | `<leader>dC` | run to cursor |
+| `<leader>dl` | run last | | `<leader>dg` | goto line (no execute) |
+| `<leader>dj` | frame **down** | | `<leader>dk` | frame **up** |
+| `<leader>dt` | terminate | | `<leader>dP` | pause |
+| `<leader>dr` | toggle REPL | | `<leader>ds` | session |
+| `<leader>du` | toggle the whole UI | | `<leader>de` | **eval** expression under cursor (n/x) |
+| `<leader>dw` | hover a value | | | |
+
+Inside a dap-ui panel (buffer-local, per element; defaults from
+`nvim-dap-ui/lua/dapui/config/init.lua:83-92`):
+
+| Key | Action |
+|---|---|
+| `<CR>` (or double-click) | **expand/collapse** a variable's children |
+| `o` | **open** — jump to that stack frame / breakpoint location |
+| `e` | **edit** a variable's value at runtime, or edit a watch expression |
+| `r` | send the line to the REPL |
+| `d` | remove a watch expression |
+| `t` | toggle (breakpoint enabled/disabled; subtle frames in stacks) |
+| `w` | add a watch |
+
+`e` is the sleeper feature: at a breakpoint you can change a variable and continue, without
+recompiling. The REPL panel also shows a **winbar with clickable play / pause / step icons**
+(`controls.enabled`, on because Neovim has `+winbar`). `G` in the `console` panel jumps to the
+bottom.
+
+### dap-ui windows: navigating, expanding, resizing
+
+They are ordinary windows, so navigation is ordinary: `<C-h/j/k/l>` (LazyVim) or `<C-w>w`.
+`<leader>du` hides/shows all of them; they also auto-open on `event_initialized`.
+
+**Why `<C-w>>` seems broken:** the docked panels set `winfixwidth`/`winfixheight`
+(`nvim-dap-ui/lua/dapui/windows/layout.lua:179-180`), so resize keys are silently ignored.
+Two ways around it:
+
+- **Temporary** (per session):
+  `:lua vim.wo.winfixwidth=false vim.wo.winfixheight=false` then `<C-w><`/`<C-w>>`/`<C-w>-`/`<C-w>+`.
+- **Permanent** — override `layouts` in the `rcarriga/nvim-dap-ui` spec. Note
+  `dapui/config/init.lua:194-196`: passing `layouts` **replaces** the default outright, so
+  every element you want must be listed.
+
+```lua
+{
+  "rcarriga/nvim-dap-ui",
+  opts = {
+    layouts = {
+      {
+        elements = {
+          { id = "scopes", size = 0.4 },
+          { id = "breakpoints", size = 0.2 },
+          { id = "stacks", size = 0.2 },
+          { id = "watches", size = 0.2 },
+        },
+        size = 50, -- width, in columns, of the left panel
+        position = "left",
+      },
+      {
+        elements = { "repl", "console" },
+        size = 15, -- height, in rows, of the bottom panel
+        position = "bottom",
+      },
+    },
+  },
+},
+```
+
+Within one area the element `size` values are fractions of that area (0.25 each by default);
+`render.indent = 1` controls how far child variables are indented.
+
 > Why WSL was needed once: Git Bash's gcc is MinGW and lacks POSIX
 > `fmemopen`/`open_memstream`. On native Linux that constraint is gone.
 
@@ -943,3 +1028,23 @@ question without a GUI.
 (hover/definition/completion). clangd is already installed by mason. Enabling
 `lazyvim.plugins.extras.lang.clangd` adds it, and its own `opts` defines the codelldb adapter
 — the guard in `plugins/dap.lua` makes the two coexist.
+
+---
+
+### Session 2026-10-16 (evening) — dap-ui usage; make it repeatable
+
+LazyVim debugging confirmed working. Three follow-ups:
+
+1. **Reproducibility:** added `scripts/setup-nvim-dap.sh` (idempotent; backs up; inserts the
+   extra in the right load-order position and writes `plugins/dap.lua`). Tested against a
+   sandbox `XDG_CONFIG_HOME` before trusting it on the real config. Motivated by redoing this
+   on a second machine.
+2. **Keybindings + dap-ui usage** written up in §1.
+3. **Resizing** answered from source, not memory: dap-ui panels set
+   `winfixwidth`/`winfixheight` (`layout.lua:179-180`), which is why `<C-w>>` does nothing.
+   Workarounds: clear the winfix options for the session, or override `layouts` — remembering
+   that `config.lua:194-196` makes a supplied `layouts` **replace** the default entirely.
+
+Methods that paid off twice today: read the plugin's own source/config before answering
+(`nvim-dap-ui`), and read `lazy.nvim`'s loader to confirm load order. Both times a
+plausible-sounding answer from memory would have been wrong.
