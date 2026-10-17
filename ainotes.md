@@ -28,6 +28,7 @@ This file is the **root**, and the only file you always read in full.
 | Debug in **VS Code** | `notes/20-debugging-vscode.md` |
 | Debug in **Neovim / LazyVim**; dap-ui keys & resizing | `notes/21-debugging-neovim.md` |
 | Set up debugging on a **new machine** | `notes/22-reproduce-debugging.md` |
+| DAP **won't work** — step-by-step checks to find out why | `notes/23-debug-lazyvim-troubleshoot.md` |
 | Git state, auto-push, recover a lost commit | `notes/30-git.md` |
 | Tokenizer — header contract & invariants | `notes/40-tokenizer-contract.md` |
 | Tokenizer — current code & open defects | `notes/41-tokenizer-state.md` |
@@ -67,6 +68,7 @@ notes/
   20-debugging-vscode.md       VS Code launch/tasks config
   21-debugging-neovim.md       nvim-dap setup, keymaps, dap-ui usage
   22-reproduce-debugging.md    scripts/setup-nvim-dap.sh + recreation steps
+  23-debug-lazyvim-troubleshoot.md  step-by-step checks when DAP won't work
   30-git.md                    branch state, auto-push, detached-HEAD incident
   40-tokenizer-contract.md     the header contract and invariants
   41-tokenizer-state.md        what the code does now + open defects

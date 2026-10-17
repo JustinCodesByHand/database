@@ -18,6 +18,10 @@ It is **idempotent** and backs up anything it would overwrite. It:
 
 Then, inside Neovim: `:MasonInstall codelldb`, `:Lazy sync`, and restart.
 
+**If it errors or DAP still doesn't work,** don't re-run blindly — work through
+[23-debug-lazyvim-troubleshoot](23-debug-lazyvim-troubleshoot.md), which lists exactly what to
+check and what output to capture.
+
 Verified against a sandbox `XDG_CONFIG_HOME` before being trusted on the real config: the
 insert position was correct and a second run reported everything `already`.
 

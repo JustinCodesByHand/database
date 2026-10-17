@@ -370,3 +370,24 @@ won't force. One stale stash remains (the header comment deletion). Updated
 
 **Git note:** local `dev` was rewritten; `git push --force-with-lease` will be needed if you want
 to sync `origin/dev` to `8b266f9`. The notes now document this.
+
+## Session 2026-10-16 (later) — LazyVim DAP troubleshooting list + git/auth
+
+The learner hit an error setting up DAP in LazyVim on a second laptop and asked for an explicit
+step-by-step list (not another script) that the other session could follow to fix the config.
+Added `notes/22-debug-lazyvim-troubleshoot.md` (commit `94efd02`, pushed to `origin/dev`).
+It is a **checklist**, not a fix — it captures what to run and what output to send, because the
+specific error was never provided. Later renamed to
+[23-debug-lazyvim-troubleshoot](23-debug-lazyvim-troubleshoot.md) to avoid colliding with
+[22-reproduce-debugging](22-reproduce-debugging.md), cross-linked both ways, and added it to the
+routing table + layout in the root.
+
+**Git/auth:** pushes had been failing with `could not read Username for 'https://github.com'`.
+Root cause was **not** the token: gnome-keyring (`Default_keyring`) was **locked**, so gh could
+not read its OAuth token and the `gh auth git-credential` helper returned nothing (this is also
+why lazygit "forgot" the token). Options given: (A) switch `origin` to SSH (an unencrypted
+`~/.ssh/id_ed25519` already exists) — durable, no keyring; (B) re-auth gh with
+`--insecure-storage` so the token lives in `~/.config/gh/hosts.yml` instead of the keyring;
+(C) unlock the keyring (recurs after reboot without PAM integration). `origin/dev` now carries
+`94efd02`, so a push has since succeeded — treat the auth state as resolved but verify before
+relying on it.

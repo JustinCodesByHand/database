@@ -1,4 +1,9 @@
-# Neovim DAP debugging (MiniDB) — step-by-step fix list
+# 23 — LazyVim DAP troubleshooting (step-by-step)
+
+Part of the [notes tree](../ainotes.md). Read when DAP **won't work** and you need to find out
+why. For the happy-path setup (the automated script), see
+[22-reproduce-debugging](22-reproduce-debugging.md); for the config/keymaps, see
+[21-debugging-neovim](21-debugging-neovim.md).
 
 If DAP won't work in Neovim on your second laptop, do these in order. Don't skip anything. Share the outputs if it still fails.
 
