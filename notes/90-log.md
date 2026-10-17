@@ -351,3 +351,9 @@ Also, while verifying the split against disk, found and recorded:
 
 **Lesson:** the same "trust disk over the brief" rule that caught the 09-28 git picture also
 applied to these notes. Reorganizing is a good moment to re-verify every claim.
+
+**Immediate correction:** committing the reorg showed the post-commit hook **pushed**
+(`dev -> origin/dev`), and `gh auth status` reports logged in as `JustinCodesByHand`. The notes'
+"auto-push cannot push — auth never configured" claim was therefore stale. Updated
+[30-git](30-git.md): `dev` is in sync with `origin/dev`, and the second-machine blocker is gone
+(a plain `git pull` now gets `scripts/setup-nvim-dap.sh`).

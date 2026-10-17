@@ -12,8 +12,8 @@ commit, or checking what is stashed.
 | Thing | Reality |
 |---|---|
 | Branch | `dev` |
-| `dev` vs `origin/dev` | **ahead 4**, behind 0 (unpushed) |
-| Recent `dev` | `86db7e9` scripts, `e2b07de` notes, `d8e8592` scratch, `1813707` SELECT token |
+| `dev` vs `origin/dev` | **in sync** (ahead 0), at `af5d522` |
+| Recent `dev` | `af5d522` notes tree, `86db7e9` scripts, `e2b07de` notes, `d8e8592` scratch, `1813707` SELECT token |
 | Remote | `origin` = `https://github.com/JustinCodesByHand/database.git` |
 | Remote branches | `origin/main`, `origin/dev`, `origin/parser` |
 | `rescue-a1ce250` | still present (safety branch; safe to delete once confirmed) |
@@ -54,8 +54,12 @@ Goal: every commit goes to `origin` automatically.
 - `gh` **2.102.0** at `~/.local/bin/gh` (standalone binary, *not* pacman — the pacman sync DB
   was 6 days stale with 172 pending upgrades; installing via pacman would have forced a
   whole-system `-Syu`). **Consequence:** pacman won't update `gh`; re-download manually.
-- **Auth was never configured**, so auto-push cannot actually push yet. Needs `gh auth login`
-  then `gh auth setup-git`. Until then `dev` accumulates unpushed commits.
+- **Authenticated — auto-push works (confirmed 2026-10-16).** `gh auth status` shows logged in
+  to `github.com` as **JustinCodesByHand** (token in the keyring; scopes `gist, read:org, repo,
+  workflow`). A commit pushed `dev -> origin/dev` automatically and left the branch in sync, so
+  the earlier "auth was never configured" blocker is **resolved**. The Neovim debug setup can now
+  be obtained on a second machine with a plain `git pull` (no more manual copy of
+  `scripts/setup-nvim-dap.sh`).
 
 ## Lesson: detached HEAD silently orphans commits (learned 2026-10-03 the hard way)
 

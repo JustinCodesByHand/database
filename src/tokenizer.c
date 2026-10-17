@@ -107,8 +107,9 @@ static Token tokenize_word(Lexer *lexer, size_t starting_index) {
   newToken.word_length = lexer->cursor_position - newToken.start_index;
   newToken.input_string = lexer->input_string + newToken.start_index;
 
-  if ((strncasecmp(newToken.input_string, "select", newToken.word_length)) ==
-      0) {
+  if (newToken.word_length == strlen("SELECT") &&
+      (strncasecmp(newToken.input_string, "select", newToken.word_length)) ==
+          0) {
     newToken.token_type = TOKEN_SELECT;
   } else {
     newToken.token_type = TOKEN_IDENT;
