@@ -88,6 +88,45 @@ at any string:
 make build/scratch && ./build/scratch SELECT
 ```
 
+### Debugging (Neovim / LazyVim) — set up 2026-10-16
+
+**Root cause it did not work: the LazyVim `dap.core` extra was never enabled.** The spec in
+`~/.config/nvim/lua/config/lazy.lua` imported only `lazyvim.plugins` and `plugins`, so
+`nvim-dap` was not even installed. No launch config could have fixed that. `:LazyExtras`
+(the LazyVim way) toggles the same thing.
+
+Two changes, both outside the repo:
+
+1. `~/.config/nvim/lua/config/lazy.lua` — added
+   `{ import = "lazyvim.plugins.extras.dap.core" }` **before** `{ import = "plugins" }`.
+   Order matters: extras are applied before user plugins, so the user's `opts` wins.
+2. `~/.config/nvim/lua/plugins/dap.lua` — **new file**, points codelldb at the three
+   Makefile targets with the same three names as VS Code.
+
+`codelldb` was **already installed** by mason
+(`~/.local/share/nvim/mason/bin/codelldb`); an earlier `command -v codelldb` said "missing"
+only because mason's `bin/` is on Neovim's PATH, not the shell's. codelldb bundles its own
+LLDB, so no system `lldb` is needed.
+
+Use: open a file in the repo, set a breakpoint with `<leader>db`, pick **`<leader>dc`** →
+"minidb: build + debug tests". Each config rebuilds via `make -C <root> <file-target>`
+inside its `program()` function, so it is the nvim equivalent of VS Code's `preLaunchTask`.
+
+**How the two LazyVim mechanisms compose** (verified against lazy.nvim source, not guessed):
+`Plugin.values`/`M._values` in `lazy/core/plugin.lua` runs *every* `opts` function in spec
+order (super first), then `loader.lua: M.config` runs the plugin's `config`. So LazyVim's
+`dap.core` + `lang.clangd` opts run first and a later `opts = function()` in `plugins/dap.lua`
+overwrites `dap.configurations.c` **last**. Verify a claim about load order by reading
+`~/.local/share/nvim/lazy/lazy.nvim/lua/lazy/core/{plugin,loader}.lua`, not from memory.
+
+`mason-nvim-dap` appends four generically-named `LLDB: Launch*` entries *after* the custom
+ones (it runs inside `dap.core`'s `config`, i.e. after all `opts`). Harmless; just pick the
+`minidb:` entries.
+
+Verified headlessly (all four passed): config files compile, `nvim-dap` + `nvim-dap-ui` load,
+`dap.adapters.codelldb` resolves to the mason binary, the three `program()` calls build and
+return executable paths, and a real session fires `DAP_EVENT_INITIALIZED` → `DAP_EVENT_EXITED`.
+
 > Why WSL was needed once: Git Bash's gcc is MinGW and lacks POSIX
 > `fmemopen`/`open_memstream`. On native Linux that constraint is gone.
 
@@ -858,3 +897,49 @@ debugger launches it a second time. And every `preLaunchTask` needs a `problemMa
 
 **`token_type_name` is therefore recoverable** — rename, move to `tokenizer.c`, change
 `case TOKEN_ERROR:` to `case token_error:`, and reconcile the `default:` (see §7). No rewrite.
+
+---
+
+### Session 2026-10-16 (later) — LazyVim debugging
+
+**Goal:** get the same debugging working in LazyVim, reusing the `build/tests` /
+`build/minidb` / `build/scratch` targets from the VS Code work.
+
+**Root cause:** the LazyVim DAP extra was never enabled — `lazy.lua` imported only
+`lazyvim.plugins` and `plugins`, so `nvim-dap` was not installed at all.
+
+**Fixed, both outside the repo:**
+- `~/.config/nvim/lua/config/lazy.lua`: added
+  `{ import = "lazyvim.plugins.extras.dap.core" }` before `{ import = "plugins" }`.
+- `~/.config/nvim/lua/plugins/dap.lua` (new): defines the codelldb adapter (guarded, so it
+  also works if `lang.clangd` later defines it) and three `dap.configurations.c` entries that
+  `make -C <root> build/<x>` then debug `build/<x>`.
+
+**Reading LazyVim's source paid off.** `dap.core` deliberately defines *no* adapter and *no*
+`dap.configurations.c` — its comment says "Requires language specific adapters ... (see lang
+extras)". The adapter + generic C configs live in `lang/clangd.lua`. So the first useful act
+was to read `~/.local/share/nvim/lazy/LazyVim/lua/lazyvim/plugins/extras/dap/core.lua` and
+`.../lang/clangd.lua` instead of pasting a config from memory.
+
+**Two merge facts, confirmed in lazy.nvim source rather than assumed:**
+- `lazy/core/plugin.lua` `M._values` runs *all* `opts` functions for a plugin in spec order
+  (super first), so a later `opts` in `plugins/` overrides an earlier extra's `opts`.
+- `lazy/core/loader.lua` `M.config` resolves `opts` *then* runs `config`, so
+  `mason-nvim-dap`'s handler (called from `dap.core`'s `config`) runs after every `opts` and
+  appends four `LLDB: Launch*` configs *behind* the custom three.
+
+**Traps re-confirmed:** (1) mason installs are on Neovim's PATH, not the shell's —
+`command -v codelldb` lied; the file existed all along. (2) `make test` builds *and runs*;
+launch configs must rebuild the *file* target (`build/tests`), not `test`. (3) codelldb
+bundles its own LLDB, so the missing system `lldb` was never a blocker.
+
+**Verified headlessly** with `nvim --headless` + `require("lazy").load`:
+`dap.adapters.codelldb` resolves to the mason binary; all three `program()` calls build and
+return executable paths; and a real `dap.run` fires `DAP_EVENT_INITIALIZED` then
+`DAP_EVENT_EXITED`. That is the pattern for checking any "is nvim actually configured"
+question without a GUI.
+
+**Not done (offered):** `lang.clangd` is *not* enabled, so there is still no C LSP
+(hover/definition/completion). clangd is already installed by mason. Enabling
+`lazyvim.plugins.extras.lang.clangd` adds it, and its own `opts` defines the codelldb adapter
+— the guard in `plugins/dap.lua` makes the two coexist.
