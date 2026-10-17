@@ -153,24 +153,39 @@ TokenList *tokenize(const char *input_string) {
       increment_cursor(&lexer);
     }
 
-    // TODO: index into the string using
-    // tokens's word_length, start_index,*input_string
-    //
+    // trailing whitespace: nothing is left but the EOF marker
+    if (is_at_end(&lexer)) {
+      break;
+    }
+
+    // everything that is not whitespace starts a token here
     size_t starting_index = lexer.cursor_position;
 
-    while (isalpha((unsigned char)peek(&lexer))) {
-      // increment the count until we encounter a space
+    if (isalpha((unsigned char)peek(&lexer))) {
+      // a word: consume the run of letters, then classify it
+      while (isalpha((unsigned char)peek(&lexer))) {
+        // increment the count until we encounter a non-letter
+        increment_cursor(&lexer);
+      }
+      Token word_tkn = tokenize_word(&lexer, starting_index);
+      list_push(lexer.lex_tkn_list_struct, word_tkn);
+
+    } else if (peek(&lexer) == '*') {
+      // a one-character operator: its span is exactly this char
+      increment_cursor(&lexer);
+      Token star_tkn = {TOKEN_STAR, lexer.input_string + starting_index, 1,
+                        starting_index};
+      list_push(lexer.lex_tkn_list_struct, star_tkn);
+
+    } else {
+      // Unrecognised character (operator, punctuation, digit, ...). We do
+      // not tokenise these yet, but we MUST consume one so the loop can
+      // never spin forever on the same char.
+      // TODO: emit real tokens (e.g. ';' -> TOKEN_SEMICOLON) and/or error
+      // reporting (error_msg + error_pos + had_error) — see the open design
+      // question about how OOM/lex errors should surface.
       increment_cursor(&lexer);
     }
-    Token word_tkn = tokenize_word(&lexer, starting_index);
-    if (word_tkn.word_length != 0) {
-      list_push(lexer.lex_tkn_list_struct, word_tkn);
-    }
-
-    // TODO: the word spans [starting_index, lexer.cursor_position), so
-    //   word_length = lexer.cursor_position - starting_index
-    // Build that Token and list_push() it. Until then starting_index is
-    // captured but unused, which -Wunused-variable is (correctly) flagging.
   }
   // if we read '\0', then make EOF token and exit
   if (is_at_end(&lexer) == true) {

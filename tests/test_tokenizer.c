@@ -43,6 +43,23 @@ static void select_input_is_select_then_eof(void) {
   token_list_free(tknlst);
 }
 
+/* [checklist] "*" produces two tokens: TOKEN_STAR then TOKEN_EOF. */
+static void star_input_is_star_then_eof(void) {
+  TokenList *tknlst = tokenize_with("*");
+  ASSERT_NOT_NULL(tknlst);
+  ASSERT_EQ_INT(2, tknlst->total_num_tkns);
+
+  /* the operator: one character, at index 0 */
+  ASSERT_EQ_INT(TOKEN_STAR, tknlst->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].start_index);
+  ASSERT_EQ_INT(1, tknlst->token_list_buffer[0].word_length);
+
+  /* then the end-of-input marker */
+  ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[1].token_type);
+
+  token_list_free(tknlst);
+}
+
 /* The rest of the checklist (guide line 2610) — write these yourself:
  *   case-insensitive keywords
  *   "users" -> TOKEN_IDENT length 5:
@@ -61,4 +78,5 @@ void suite_tokenizer(void) {
   RUN_TEST(empty_input_is_single_eof);
   RUN_TEST(whitespace_only_input_is_single_eof);
   RUN_TEST(select_input_is_select_then_eof);
+  RUN_TEST(star_input_is_star_then_eof);
 }

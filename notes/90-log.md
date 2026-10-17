@@ -349,11 +349,24 @@ Also, while verifying the split against disk, found and recorded:
 - Corrected stale claims: the alpha-loop hang is fixed (a *different* hang on unhandled chars
   remains); `token_type_name` is absent, not "added"; the field rename is done, not WIP.
 
-**Lesson:** the same "trust disk over the brief" rule that caught the 09-28 git picture also
-applied to these notes. Reorganizing is a good moment to re-verify every claim.
+## Session 2026-10-16 (night-end) — `*` token, divergence, and notes cleanup
 
-**Immediate correction:** committing the reorg showed the post-commit hook **pushed**
-(`dev -> origin/dev`), and `gh auth status` reports logged in as `JustinCodesByHand`. The notes'
-"auto-push cannot push — auth never configured" claim was therefore stale. Updated
-[30-git](30-git.md): `dev` is in sync with `origin/dev`, and the second-machine blocker is gone
-(a plain `git pull` now gets `scripts/setup-nvim-dap.sh`).
+**Goal:** get `*` to tokenize as `TOKEN_STAR`.
+
+Added the test `star_input_is_star_then_eof`; it hung (exit 124) demonstrating the infinite
+loop on unrecognised chars. Implemented minimal handling in `tokenize`:
+- guard `is_at_end()` after whitespace skip (so trailing whitespace doesn't fall through),
+- handle alphabetic words as before, **handle `*` as a single-char token** (span 1 char,
+  `start_index` and `word_length` correct), and **consume unrecognised chars** to prevent hangs
+  (they're silently dropped for now with a TODO).
+
+Results: build green, **7 tests, 0 failed**. Verified `SELECT * FROM users;` → `SELECT, STAR,
+IDENT(FROM), IDENT(users), EOF` (no hang), `*` → `STAR, EOF`, `@`/`SELECT@` → no hang, no
+leak. Commits: `8b266f9` (notes + the squashed prefix fix) is ahead 1 / behind 1 of
+`origin/dev` (diverged) because a rebase rewrote an already-pushed commit; the auto-push hook
+won't force. One stale stash remains (the header comment deletion). Updated
+[41-tokenizer-state](41-tokenizer-state.md), [60-open-items](60-open-items.md),
+[30-git](30-git.md) and the root `ainotes.md` to reflect current reality.
+
+**Git note:** local `dev` was rewritten; `git push --force-with-lease` will be needed if you want
+to sync `origin/dev` to `8b266f9`. The notes now document this.

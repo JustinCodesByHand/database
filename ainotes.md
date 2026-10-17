@@ -41,11 +41,11 @@ This file is the **root**, and the only file you always read in full.
 
 ### Current focus (2026-10-16)
 
-Chapter 2 (tokenizer). Build is green — **6 tests, 0 failed**. The lexer currently handles
-only whitespace, alphabetic words, and EOF. Everything else (operators, numbers, strings) is
-unhandled, and any non-alpha, non-space character makes it **loop forever** (nothing advances
-the cursor). Highest-value next step: fix the prefix-match bug in `tokenize_word` and add the
-keyword table. Full detail in `notes/41-tokenizer-state.md` and `notes/60-open-items.md`.
+Chapter 2 (tokenizer). Build is green — **7 tests, 0 failed**. The lexer now handles
+whitespace, alphabetic words, `*`, and EOF. Unknown characters are consumed and skipped
+(stopgap). Next step: keyword table (so `FROM` becomes `TOKEN_FROM`) and punctuation/operators
+as real tokens. Details: [41-tokenizer-state](notes/41-tokenizer-state.md),
+[60-open-items](notes/60-open-items.md).
 
 ### How to keep these notes
 

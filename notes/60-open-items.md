@@ -4,31 +4,27 @@ Part of the [notes tree](../ainotes.md). Read this to decide what to do next.
 
 ## Do next (Chapter 2 — tokenizer, in order)
 
-1. **Fix the prefix-match bug** in `tokenize_word` (length check; see
-   [41-tokenizer-state](41-tokenizer-state.md) defect 1). **The fix already exists in
-   `stash@{0}`** — apply it, or retype it:
-   `git stash apply stash@{0}`. Add tests first (new-test-first, guide ~line 2610):
-   `"selection"` → one `TOKEN_IDENT`; `"SEL"`, `"SE"`, `"S"` → `TOKEN_IDENT`.
-2. **Add the keyword table.** Only `"select"` is recognised; the other **10** keywords
-   (`FROM, WHERE, INSERT, INTO, VALUES, CREATE, TABLE, DELETE, UPDATE, SET`) lex as
-   `TOKEN_IDENT`. Put the table `static const` in `tokenizer.c` (not the header); match with
-   `strncasecmp` **plus** the length check from step 1. Test case-insensitivity
-   (`select`, `SeLeCt`).
-3. **Stop the infinite loop on unhandled characters.** Any non-alpha, non-space char
-   (`*`, `@`, a digit) spins forever because nothing advances the cursor. The `default`
-   dispatch must consume the char (or record an error and exit). This unblocks the rest of
-   the chapter.
-4. **Add the remaining token types:** operators/punctuation (`*` `,` `;` `(` `)` `=` `!=`
-   `<` `<=` `>` `>=`), numbers, and strings (quotes excluded; unterminated string →
-   `had_error`). Absent helpers the guide lists: `peek_next`, `match`, `scan_number`,
-   `scan_identifier`, `scan_string`.
-5. **Implement `token_type_name`** from `tests/scratch.c` (see
-   [42-token-type-name](42-token-type-name.md)) — recoverable, no rewrite.
+- [x] **Prefix-match bug** — fixed and committed (length check in `tokenize_word`).
+- [x] **`*` → `TOKEN_STAR`** — done; `star_input_is_star_then_eof` passes.
+- [x] **Hang on unrecognised characters** — gone (they are consumed and skipped; see
+  [41-tokenizer-state](41-tokenizer-state.md) defect 7).
+- [ ] **Keyword table.** Only `"select"` is a keyword; add the other **10**
+  (`FROM, WHERE, INSERT, INTO, VALUES, CREATE, TABLE, DELETE, UPDATE, SET`) as a `static const`
+  table in `tokenizer.c` (not the header), matched with `strncasecmp` **plus** the length
+  check. Test case-insensitivity (`select`, `SeLeCt`).
+- [ ] **Make punctuation/operators real tokens:** `,` `;` `(` `)` first, then `=` `!=` `<`
+  `<=` `>` `>=`. Today they are *silently dropped* (defect 7) — which also means
+  `SELECT * FROM users;` parses `;` as nothing. Generalise the hand-rolled `*` branch
+  (defect 8) into a small `switch`/table on `peek`.
+- [ ] **Numbers and strings** (quotes excluded; unterminated string → `had_error`).
+- [ ] **Implement `token_type_name`** from `tests/scratch.c` (see
+  [42-token-type-name](42-token-type-name.md)) — recoverable, no rewrite.
 
-Other checklist tests from the guide (~line 2610): position checks (`"SELECT * FROM"` →
-`FROM` at position 9); `"SELECT@"` → error naming the character; identifiers with
-digits/underscores (`user_id2`) but not starting with a digit; `token_list_free(NULL)` safe;
-10,000-token stress input.
+Other checklist tests from the guide (~line 2610): position checks (`"SELECT * FROM users"`)
+— note `FROM` should become `TOKEN_FROM` once the keyword table lands; prefix cases
+`"selection"`/`"SEL"`/`"SE"`/`"S"` → `TOKEN_IDENT`; `"SELECT@"` → error naming the character;
+identifiers with digits/underscores (`user_id2`) but not starting with a digit;
+`token_list_free(NULL)` safe; 10,000-token stress input.
 
 ## Open design decisions (decide before the parser grows)
 
@@ -50,8 +46,12 @@ digits/underscores (`user_id2`) but not starting with a digit; `token_list_free(
 - [ ] `list_push`: `return false` on OOM rather than `assert`; single growth path.
 - [ ] Remove the leftover `aaaaa` comment in `tokenizer.c`'s `tokenize` doc.
 - [ ] Delete the `rescue-a1ce250` branch once you are confident nothing else is needed.
-- [ ] Resolve the **two stashes** — apply `stash@{0}` (the prefix fix), drop `stash@{1}`
-      (superseded). See [30-git](30-git.md).
+- [ ] Drop the remaining stash (`stash@{0}`, the old superseded `tokenizer.h` comment
+      deletion). The prefix-fix stash was applied and committed. See [30-git](30-git.md).
+- [ ] **Reconcile the diverged branch.** A 2026-10-16 rebase rewrote the already-pushed
+      `a9074d0` into `8b266f9`, so `dev` is now **ahead 1 / behind 1** of `origin/dev` and the
+      auto-push hook cannot fast-forward. Decide: `git push --force-with-lease` (keeps the
+      squash) or reset to `origin/dev` and re-apply. See [30-git](30-git.md).
 
 ## Repo / environment items (found 2026-10-16)
 

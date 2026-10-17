@@ -12,32 +12,40 @@ commit, or checking what is stashed.
 | Thing | Reality |
 |---|---|
 | Branch | `dev` |
-| `dev` vs `origin/dev` | **in sync** (ahead 0), at `af5d522` |
-| Recent `dev` | `af5d522` notes tree, `86db7e9` scripts, `e2b07de` notes, `d8e8592` scratch, `1813707` SELECT token |
+| `dev` vs `origin/dev` | **ahead 1 / behind 1 — DIVERGED** (see below) |
+| Local `dev` HEAD | `8b266f9` (notes + the prefix-match fix, squashed) |
+| `origin/dev` | `a9074d0` (notes only) |
+| Recent `dev` | `8b266f9`, `af5d522` notes tree, `86db7e9` scripts, `e2b07de` notes, `d8e8592` scratch |
 | Remote | `origin` = `https://github.com/JustinCodesByHand/database.git` |
 | Remote branches | `origin/main`, `origin/dev`, `origin/parser` |
 | `rescue-a1ce250` | still present (safety branch; safe to delete once confirmed) |
 
 `main` is **not** where the real work is — work happens on `dev`.
 
-## Stashes — READ THIS BEFORE `git stash`
+### ⚠️ `dev` diverged from `origin/dev` (2026-10-16)
+
+A `git rebase -i` squashed the prefix-match fix (`6d54fb4 "fix word stringcmp"`) into the
+already-pushed notes commit `a9074d0`, producing `8b266f9`. Rewriting a pushed commit means
+local `dev` no longer contains `a9074d0`, so it is **ahead 1 / behind 1** and the auto-push
+hook cannot fast-forward — **pushes will fail** until this is resolved. It prints a warning
+and keeps the commit; it never forces.
+
+Options:
+- `git push --force-with-lease` — remote `dev` moves to `8b266f9`, which contains everything
+  `a9074d0` had plus the fix. Safe content-wise; use `--force-with-lease`, never bare
+  `--force`. A second machine with the old `dev` then needs `git pull --rebase` (or reset).
+- `git reset --hard origin/dev` then re-commit the fix — avoids a force-push but throws away
+  the squash.
+
+## Stash
 
 ```
 stash@{0}: On dev: Auto-stashing changes for checking out main
-stash@{1}: On dev: Auto-stashing changes for checking out main
 ```
 
-Both were created automatically when a `git checkout main` auto-stashed a dirty tree.
-
-- **`stash@{0}` is valuable — it is the prefix-match FIX** for `tokenize_word`, i.e. the next
-  work item. It adds the missing length check:
-  ```c
-  if (newToken.word_length == strlen("SELECT") &&
-      (strncasecmp(newToken.input_string, "select", newToken.word_length)) == 0) {
-  ```
-  **Do not drop it.** Apply with `git stash apply stash@{0}` (or `pop` to apply + delete).
-- **`stash@{1}` is superseded** — it deletes two lines of `src/tokenizer.h` (a mangled
-  `token_type_name` comment). **Do not pop.** The header has since been repaired properly.
+One stash left (2026-10-16). It is the **superseded** 2-line `src/tokenizer.h` deletion (a
+mangled `token_type_name` comment). **Do not pop.** Drop it with `git stash drop` when ready.
+The other auto-stash held the prefix-match fix and has been applied and committed.
 
 ## Auto-push (set up 2026-10-03 22:52)
 
@@ -56,10 +64,10 @@ Goal: every commit goes to `origin` automatically.
   whole-system `-Syu`). **Consequence:** pacman won't update `gh`; re-download manually.
 - **Authenticated — auto-push works (confirmed 2026-10-16).** `gh auth status` shows logged in
   to `github.com` as **JustinCodesByHand** (token in the keyring; scopes `gist, read:org, repo,
-  workflow`). A commit pushed `dev -> origin/dev` automatically and left the branch in sync, so
-  the earlier "auth was never configured" blocker is **resolved**. The Neovim debug setup can now
-  be obtained on a second machine with a plain `git pull` (no more manual copy of
-  `scripts/setup-nvim-dap.sh`).
+  workflow`). However, the 2026-10-16 rebase rewrote a pushed commit, so `dev` is now
+  **diverged** from `origin/dev` (see state table). The post-commit hook refuses to
+  non-fast-forward push (warns and keeps the commit), so you must `git push --force-with-lease`
+  to sync after resolving divergence.
 
 ## Lesson: detached HEAD silently orphans commits (learned 2026-10-03 the hard way)
 
