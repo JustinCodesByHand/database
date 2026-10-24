@@ -81,3 +81,24 @@ collides with `test_main.c`.
 - `.exit` → `__EXIT`; anything else → "Cant parse sql." → `__CANTPARSE`.
 - `__EXIT` / `__CONTINUE` / `__CANTPARSE` are **reserved identifiers** (leading double
   underscore). Pending rename — see `notes/60-open-items.md`.
+
+## Editor tooling — clangd (the LSP)
+
+**One server for C and C++.** clangd is it; there is no separate "C LSP". It picks the language
+per file: `.c` → C; `.h` is *ambiguous* and both Vim's filetype detection and clangd default
+it to **C++** — that was the source of C++ completions while editing `tokenizer.h` / `test.h`
+(2026-10-23).
+
+| Piece | Where | What |
+|---|---|---|
+| `.clangd` | repo root (committed) | `Add: [-xc, -std=c17]` for `.*\.(c|h)$` — pins headers to C. No `-I` flags here: clangd's *fallback* compiles each file with its own directory as cwd, so relative `-I` paths silently misresolve. |
+| `make compile_commands` | Makefile (committed) | generates `compile_commands.json` (gitignored — absolute paths, machine-specific) from the same `$(SRC)`/`$(TEST_SRC)`/`$(CFLAGS)` as the build. Re-run after adding/renaming sources. |
+| `vim.g.c_syntax_for_h = true` | `~/.config/nvim/init.lua` (outside repo) | Vim's documented switch (`:h filetype`) for `.h` → `c` filetype. Verified: `.h` buffers now `ft=c`. Needs copying to the other laptop. |
+
+The clangd extra (`lazyvim.plugins.extras.lang.clangd`) is enabled via `lazyvim.json`
+(`:LazyExtras`) — not in `lazy.lua`'s imports; don't go looking for it there.
+
+DAP needs nothing: codelldb debugs the compiled ELF and has no C/C++ opinion.
+
+Verification tool: `clangd --check=<file>` (NOT `--check-path`) parses one file outside the
+editor; its `tweak: … FAIL` lines are internal noise, not diagnostics.

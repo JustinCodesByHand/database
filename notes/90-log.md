@@ -478,3 +478,35 @@ hint ladder R0–R5, fresh-surface retests); accuracy (verify doubts before teac
 don't assert, trust the repo over the notes); the voice; formatting; this project's working
 rules; and the session protocol. Attribution and link to LearnHarness included; it is an
 adaptation, not a copy. `ainotes.md` now records that `AGENTS.md` is always in context.
+
+## Session 2026-10-23 (later) — C++ autocomplete fixed: clangd pinned to C
+
+The learner reported C++ completions while writing C. Diagnosis (headless nvim): `.c` buffers
+were fine (`ft=c`, clangd attached) but `.h` buffers were `ft=cpp` — and `nvim --clean` proved
+`.h → cpp` is **Vim's own default** (`:h filetype` documents `g:c_syntax_for_h`), not
+LazyVim's. clangd defaults ambiguous headers to C++ as well — same trap, LSP side. There is
+no separate "C LSP"; clangd serves both languages, per file.
+
+Fixes, all verified on disk/run:
+1. repo `.clangd` — `Add: [-xc, -std=c17]` for `.*\.(c|h)$`; `clangd --check=src/tokenizer.h`
+   parses as C with 0 errors.
+2. `make compile_commands` (new Makefile target) — generates `compile_commands.json`
+   (gitignored, machine-specific) from the Makefile's own variables. First attempt put
+   `-Isrc -Itests` into `.clangd` — broken: clangd's *fallback* runs each file with its own
+   directory as cwd, so relative `-I` silently misresolved and produced 21 phantom errors on
+   tests/test_tokenizer.c (`'tokenizer.h' file not found`). The database fixes the `.c` files;
+   the `.clangd` block covers headers (which never get database entries).
+3. `vim.g.c_syntax_for_h = true` at the top of `~/.config/nvim/init.lua` — verified `.h`
+   buffers now `ft=c`. (An earlier attempt in `lua/config/filetypes.lua` never loaded —
+   removed.) Restart of the running nvim needed to pick it up.
+
+Parity proof the setup works: clangd now reports the exact `-Wunused-const-variable` warning
+gcc does, with the same flags. `clangd --check` (not `--check-path`) is the verification tool;
+its `tweak: … FAIL` lines are internal noise. The stale todo item about enabling the clangd
+extra is corrected — it was already enabled via `lazyvim.json`. DAP: no change; codelldb is
+language-agnostic.
+
+Meanwhile the learner is mid-worksheet on the keyword table (table written at
+tokenizer.c:107, loop pending): the current `-Werror=unused-const-variable` build failure is
+exactly that in-between state, not breakage — the stage-1 checkpoint (identical red) lands
+when the loop replaces the if/else.

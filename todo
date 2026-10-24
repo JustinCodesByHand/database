@@ -65,8 +65,12 @@ Full detail lives in `notes/` (start at `ainotes.md`). This file is the short, a
       misspelled (`workslows`); GitHub only reads `.github/workflows/`. Rename the directory.
 - [ ] **`.vscode/` is gitignored**, so the working debug config does not travel with the repo.
       Recreate from `notes/20-debugging-vscode.md`, or commit a template.
-- [ ] *(optional)* Enable `lazyvim.plugins.extras.lang.clangd` for a C LSP (clangd is already
-      installed).
+- [x] Enable `lazyvim.plugins.extras.lang.clangd` — was already on (in `lazyvim.json`, via
+      `:LazyExtras` — not in `lazy.lua`'s imports). Verified: clangd attaches to C buffers.
+      See `notes/10-project-and-build.md` (editor tooling) for the whole setup.
+- [ ] Second laptop: `git pull`, `make compile_commands`, and copy one line to its
+      `~/.config/nvim/init.lua` — `vim.g.c_syntax_for_h = true` (kills the `.h` → C++
+      filetype default). See `notes/10-project-and-build.md`.
 - [ ] *(optional, durable)* Switch `origin` to SSH so a locked gnome-keyring can never break
       pushes/auto-push again (an unencrypted `~/.ssh/id_ed25519` already exists).
 

@@ -1,0 +1,16 @@
+# clangd config — https://clangd.llvm.org/config
+#
+# WHY THIS EXISTS: clangd picks the language from the file extension, and
+# `.h` is ambiguous — clangd's default for headers is C++. That made editing
+# tokenizer.h / test.h produce C++ completions. This pins C17 for the project.
+#
+# .c files get their exact flags from compile_commands.json (run
+# `make compile_commands`); headers get no entries there, so this block is
+# the headers' source of truth. Do NOT add relative -I paths here: clangd's
+# fallback compiles each file with its OWN directory as cwd, so a relative
+# -Isrc silently resolves to the wrong place (that is why -Isrc/-Itests live
+# in compile_commands.json, not here).
+If:
+  PathMatch: .*\.(c|h)$
+CompileFlags:
+  Add: [-xc, -std=c17]
