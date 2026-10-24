@@ -12,6 +12,11 @@ session reads only what its task needs instead of the whole log.
 
 This file is the **root**, and the only file you always read in full.
 
+> **`AGENTS.md` (repo root) is the standing instruction set** — the teaching method (measure →
+> plan → teach one step at a time → check; voice; accuracy rules) adapted from LearnHarness.
+> OpenCode loads it automatically into every session's context, so you never need to re-read
+> it: it is always already active. These notes are the *knowledge map* it teaches against.
+
 1. Find your task in the routing table below.
 2. Open **only** the branch(es) for that task. Do not read the whole `notes/` tree.
 3. Open `notes/90-log.md` (append-only session history) only when you need the *why* — it is

@@ -451,3 +451,30 @@ Hardened `scripts/setup-nvim-dap.sh` step 3: instead of three hard-coded paths i
 every `*.lua` under `~/.config/nvim` for `dap.adapters.codelldb` and moves aside any file except
 the one it wrote. `bash -n` clean; ran twice — second run reports `already up to date` and moves
 nothing (idempotent). Updated notes 22, 23 and the root focus.
+
+## Session 2026-10-23 — LearnHarness teaching system migrated to `AGENTS.md`
+
+The learner hit a "free tier" error using their OpenCode Go key with LearnHarness
+(github.com/amosblomqvist/learnharness, AGPL-3.0). Diagnosis for the record: opencode's
+`-free` models are restricted to the opencode client itself ("Free-tier chat models require
+OpenCode; use paid models or Go from other clients"). The learner says a paid model was
+selected, so remaining suspects were: a stale `OPENCODE_API_KEY` shadowing the in-app key
+(LearnHarness precedence: real env / `.env.local` always wins — Settings→Keys shows
+`shadowedByEnv`), the key attached to the wrong provider row (Zen and Go share the same env
+var), or a key generated before the subscription (regenerate). DROPPED at the learner's
+request — focus moved to the migration.
+
+Migration done: read LearnHarness's whole teaching system (system-prompt.md; prompts/shared,
+teacher, prober, practice fragments; docs/teaching-methodology.md, probe-teach-split.md,
+plan.md, vision.md; skills/learnharness/SKILL.md) and adapted it into **`AGENTS.md`** at the
+repo root — the file OpenCode auto-loads into every session. It carries: the mission
+(understanding over recitation, the click, system absorbs logistics); measure-before-teach
+(bracketing strands, enter near the top); minimal-tree planning (stress-test roots, `todo` =
+the running plan map); one reasoning step at a time (Principle i — unconditional truths;
+Principle ii — "how could I have discovered this?"); the predict→teach→check cycle; check
+principles (application over recitation, diagnostic misses); Socratic vs expository;
+deliver-on-request-then-teach; the practice doctrine (inactive-state retrieval, interleaving,
+hint ladder R0–R5, fresh-surface retests); accuracy (verify doubts before teaching, compile
+don't assert, trust the repo over the notes); the voice; formatting; this project's working
+rules; and the session protocol. Attribution and link to LearnHarness included; it is an
+adaptation, not a copy. `ainotes.md` now records that `AGENTS.md` is always in context.
