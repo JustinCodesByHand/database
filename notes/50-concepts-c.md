@@ -52,7 +52,27 @@ things that actually came up while building the lexer.
   cannot match "full" (`total == capacity`) because that is a comparison between two runtime
   values — the info isn't in the expression.
 
+## `sizeof` and arrays
+
+- **`sizeof X` is bytes — nothing else.** `sizeof KEYWORDS` = the whole array's bytes
+  (11 × 16 = 176 on this machine); `sizeof KEYWORDS[0]` = one entry's (16). The array-count
+  idiom `sizeof arr / sizeof arr[0]` is *whole ÷ one = how many* — plain arithmetic, not
+  special syntax. It exists so the loop's count can never disagree with the table.
+- **The idiom works only where the compiler sees the actual array** (same file). Passed to a
+  function, an array arrives as a bare pointer and `sizeof` reports 8. That is why the
+  keyword table and its loop both live in `tokenizer.c`.
+- **A struct is padded to a multiple of its largest member's alignment** —
+  `keyword {const char *text; tokentype type;}` is 8 + 4 = 12, padded to 16 (verified with a
+  scratch run, not assumed).
+
 ## Loops and control flow: `advance` vs `break` vs `continue`
+
+- **The `for` line is three slots: start / keep-going test / step.** `size_t i = 0` runs
+  once; `i < n` runs before every pass; `i++` runs after every pass — the *only* thing that
+  moves `i`. Nothing else touches it.
+- **`arr[i]` is a read, not a mover.** The array never moves; the index moves; indexing
+  selects by number. On each pass `i` names which entry to read — the entry never points
+  back.
 
 - **`advance`/`increment_cursor` is the only thing that moves the cursor.** `continue` moves
   nothing.
