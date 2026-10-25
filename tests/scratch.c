@@ -17,12 +17,12 @@
 
 #define DEFAULT_INPUT "SELECT"
 
-/* TEMPORARY. token_type_name() is declared in tokenizer.h but not yet defined
- * anywhere (fix #6 on the list), so this file cannot call it yet. Delete this
- * function the moment you implement token_type_name() and call that instead --
- * it is the same job, and the real one has no default: on purpose, so a new
- * TokenType becomes a build error instead of a silent "?". */
-static const char *scratch_type_name(TokenType type) {
+/* TEMPORARY. token_type_name() was declared in tokenizer.h but is not defined
+ * anywhere, so this file cannot call it yet. Delete this function the moment you
+ * implement token_type_name() and call that instead -- it is the same job, and the
+ * real one has no default: on purpose, so a new tokentype becomes a build error
+ * instead of a silent "?".                                                      */
+static const char *scratch_type_name(tokentype type) {
   switch (type) {
     case TOKEN_SELECT:  return "SELECT";
     case TOKEN_FROM:    return "FROM";
@@ -50,7 +50,7 @@ static const char *scratch_type_name(TokenType type) {
     case TOKEN_STRING:  return "STRING";
     case TOKEN_IDENT:   return "IDENT";
     case TOKEN_EOF:     return "EOF";
-    case TOKEN_ERROR:   return "ERROR";
+    case token_error:   return "ERROR";
     default:            return "UNKNOWN";
   }
 }
@@ -79,11 +79,11 @@ int main(int argc, char **argv) {
   }
 
   for (size_t i = 0; i < list->total_num_tkns; i++) {
-    const Token *t = &list->token_list[i];
+    const Token *t = &list->token_list_buffer[i];
     printf("  [%zu] %-9s pos=%-3zu len=%-3zu text=\"%.*s\"\n",
            i,
            scratch_type_name(t->token_type),
-           t->position,
+           t->start_index,
            t->word_length,
            (int)t->word_length,   /* %.*s wants int; word_length is size_t */
            t->input_string);
