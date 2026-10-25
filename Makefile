@@ -52,25 +52,3 @@ $(BUILD):
 clean:
 	rm -rf $(BUILD) *.db *.wal
 	rm -f minidb.out
-
-# --- Editor / clangd (LSP) support ------------------------------------------
-# compile_commands.json: the compilation database clangd reads so completions
-# and diagnostics in the editor run with the SAME flags and include paths as
-# the real build. Generated and machine-specific (absolute paths), so it is
-# gitignored — regenerate after adding/renaming sources:
-#     make compile_commands
-.PHONY: compile_commands
-compile_commands:
-	@{ \
-	  echo '['; \
-	  n=0; total=$$(echo $(SRC) $(TEST_SRC) | wc -w); \
-	  for f in $(SRC) $(TEST_SRC); do \
-	    n=$$((n+1)); \
-	    case $$f in tests/*) inc=" -Itests" ;; *) inc="" ;; esac; \
-	    if [ $$n -eq $$total ]; then comma=""; else comma=","; fi; \
-	    printf '  {"directory":"%s","command":"%s %s%s -c %s -o /dev/null","file":"%s"}%s\n' \
-	      "$(CURDIR)" "$(CC)" "$(CFLAGS)" "$$inc" "$$f" "$$f" "$$comma"; \
-	  done; \
-	  echo ']'; \
-	} > compile_commands.json
-	@echo "wrote compile_commands.json ($(SRC) $(TEST_SRC) | wc -w files)"

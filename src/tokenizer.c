@@ -99,6 +99,17 @@ void token_list_free(TokenList *tkn_list_struct) {
 // increrment cursor position, so peek() sees next character
 static void increment_cursor(Lexer *lexer) { lexer->cursor_position += 1; }
 
+typedef struct {
+  const char *word;
+  tokentype keywordType;
+} keyword;
+
+static const keyword KEYWORDS[] = {
+    {"select", TOKEN_SELECT}, {"from", TOKEN_FROM},   {"where", TOKEN_WHERE},
+    {"insert", TOKEN_INSERT}, {"into", TOKEN_INTO},   {"values", TOKEN_VALUES},
+    {"create", TOKEN_CREATE}, {"table", TOKEN_TABLE}, {"delete", TOKEN_DELETE},
+    {"update", TOKEN_UPDATE}, {"set", TOKEN_SET}};
+
 // Lexer Helper:
 // creates and returns a new token that starts isalpha()
 static Token tokenize_word(Lexer *lexer, size_t starting_index) {
@@ -106,14 +117,16 @@ static Token tokenize_word(Lexer *lexer, size_t starting_index) {
   newToken.start_index = starting_index;
   newToken.word_length = lexer->cursor_position - newToken.start_index;
   newToken.input_string = lexer->input_string + newToken.start_index;
+  newToken.token_type = TOKEN_IDENT; // default value
 
-  if (newToken.word_length == strlen("SELECT") &&
-      (strncasecmp(newToken.input_string, "select", newToken.word_length)) ==
-          0) {
-    newToken.token_type = TOKEN_SELECT;
-  } else {
-    newToken.token_type = TOKEN_IDENT;
+  for (size_t i = 0; i < (sizeof(KEYWORDS) / sizeof(KEYWORDS[0])); i++) {
+    if (newToken.word_length == strlen(KEYWORDS[i].word) &&
+        strncasecmp(newToken.input_string, KEYWORDS[i].word,
+                    strlen(newToken.input_string)) == 0) {
+      newToken.token_type = KEYWORDS[i].keywordType;
+    }
   }
+
   return newToken;
 }
 

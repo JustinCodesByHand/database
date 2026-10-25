@@ -61,13 +61,15 @@ TokenList *tokenize(const char *input_string);
 
 void token_list_free(TokenList *foo);
 
-/* NOTE: `increment_cursor` is `static` in tokenizer.c, so it is file-private and
- * deliberately NOT declared here. A declaration of it in this header would also
- * conflict: non-static declaration following a static definition is an error. */
+/* NOTE: `increment_cursor` is `static` in tokenizer.c, so it is file-private
+ * and deliberately NOT declared here. A declaration of it in this header would
+ * also conflict: non-static declaration following a static definition is an
+ * error. */
 
-// Disabled while the `tokentype` rename settles. Restore both this declaration AND
-// its definition in tokenizer.c (git: branch dev, commit 0efae80) — nothing may call
-// token_type_name until both exist, or it fails at link time.
-// const char *token_type_name(tokentype type); /* for error messages and tests */
+// Disabled while the `tokentype` rename settles. Restore both this
+// declaration AND
+// its definition in tokenizer.c (git: branch dev, commit 0efae80) — nothing may
+// call token_type_name until both exist, or it fails at link time. const char
+// *token_type_name(tokentype type); /* for error messages and tests */
 
 #endif
