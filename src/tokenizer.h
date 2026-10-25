@@ -31,8 +31,8 @@ typedef enum {
   TOKEN_STRING,
   TOKEN_IDENT,
   TOKEN_EOF,
-  TOKEN_ERROR
-} TokenType;
+  token_error
+} tokentype;
 
 typedef struct {
   TokenType token_type;
@@ -54,7 +54,7 @@ typedef struct {
 typedef struct {
   const char *input_string;
   size_t cursor_position;
-  TokenList *lex_tkn_list;
+  TokenList *lex_tkn_list_struct;
 } Lexer;
 
 TokenList *tokenize(const char *input_string);

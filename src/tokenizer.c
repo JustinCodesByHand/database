@@ -109,6 +109,8 @@ void token_list_free(TokenList *tkn_list_struct) {
     free(tkn_list_struct->token_list);
     free(tkn_list_struct);
   }
+
+  return newToken;
 }
 
 // Lexer Helper

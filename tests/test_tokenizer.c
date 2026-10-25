@@ -44,4 +44,10 @@ void suite_tokenizer(void) {
   SUITE("tokenizer");
   RUN_TEST(empty_input_is_single_eof);
   RUN_TEST(whitespace_only_input_is_single_eof);
+  RUN_TEST(select_input_is_select_then_eof);
+  RUN_TEST(star_input_is_star_then_eof);
+  RUN_TEST(from_input_is_from_then_eof);
+  RUN_TEST(from_case_variant_is_from_then_eof);
+  RUN_TEST(from_prefix_is_ident_then_eof);
+  RUN_TEST(selection_is_ident_then_eof);
 }

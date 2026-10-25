@@ -1,0 +1,83 @@
+# TODO — MiniDB
+
+Updated: 2026-10-17 · branch `dev` (in sync with `origin/dev`)
+Full detail lives in `notes/` (start at `ainotes.md`). This file is the short, actionable list.
+
+## Bugs to fix
+
+- [ ] **DAP "port error" on the second laptop.** Starting the debugger errors out. Cause is
+      almost certainly a legacy `type = "executable"` codelldb adapter there — nvim-dap only
+      substitutes `${port}` for `type = "server"`, so codelldb receives the literal `${port}`.
+      Fix: run `scripts/setup-nvim-dap.sh` (step 3 now moves such files aside), `:Lazy sync`,
+      restart. Checks + error capture: `notes/23-debug-lazyvim-troubleshoot.md`. The primary
+      machine is verified clean.
+- [ ] **Tokenizer silently drops unknown chars** (`, ; ( ) = < >` and digits). It no longer
+      hangs (stopgap), but they produce no token and no error. Needs real tokens / error
+      reporting. `notes/41-tokenizer-state.md` defect 7.
+- [ ] **`tokenize` ignores `list_push`'s return value** (the word push *and* the `*` push). A
+      grow failure goes unnoticed. defect 2.
+- [ ] **`grow_list_capisity` returns `void`**; failure surfaces only through the sticky
+      `had_error` side effect. defect 3.
+- [ ] **`had_error` is overloaded + sticky** — cannot distinguish "malformed SQL" from "out of
+      memory". defect 4.
+- [ ] **`token_type_name` is not implemented** (header declaration commented out). The 27-case
+      body is recoverable from `tests/scratch.c` (`scratch_type_name`).
+      `notes/42-token-type-name.md`.
+- [ ] **EOF token fields are inconsistent**: `input_string` = start of input, `start_index` =
+      end. Natural value is `lexer.input_string + lexer.cursor_position`. defect 6.
+
+## Next up — tokenizer (in order)
+
+- [ ] **Keyword table.** Only `"select"` is a keyword; add the other 10
+      (`FROM, WHERE, INSERT, INTO, VALUES, CREATE, TABLE, DELETE, UPDATE, SET`) as a `static
+      const` table in `tokenizer.c` (not the header), matched with `strncasecmp` **plus** the
+      length check. Test case-insensitivity (`select`, `SeLeCt`).
+- [ ] **Punctuation/operators as real tokens:** `,` `;` `(` `)` first, then `=` `!=` `<` `<=`
+      `>` `>=`. Generalise the hand-rolled `*` branch into a small `switch`/table on `peek`.
+- [ ] **Numbers and strings** (quotes excluded; unterminated string → `had_error`).
+- [ ] **Implement `token_type_name`** (see bug above).
+- [ ] **Guide checklist tests** (~line 2610): position checks; prefix cases
+      `"selection"`/`"SEL"`/`"SE"`/`"S"` → `TOKEN_IDENT`; `"SELECT@"` → error naming the
+      character; identifiers with digits/underscores (`user_id2`) but not starting with a digit;
+      `token_list_free(NULL)` safe; 10,000-token stress input.
+
+## Open design decisions (decide before the parser grows)
+
+- [ ] **OOM reporting:** should `tokenize` return `NULL`, or the list with `had_error = true`?
+      If `NULL`, the caller has no list to read `had_error` from.
+- [ ] **`token_type_name` spelling:** enum names (`"STAR"`, `"LTE"`) vs user-facing SQL symbols
+      (`"*"`, `"<="`). The guide derives `expect()` messages from it, so decide now.
+- [ ] **EOF token field convention** (see bug above).
+
+## Cleanup (non-blocking)
+
+- [ ] Remove the leftover `aaaaa` in `tokenizer.c` (the `tokenize` doc comment, ~line 122).
+- [ ] Rename `__EXIT` / `__CONTINUE` / `__CANTPARSE` (leading `__` is reserved).
+- [ ] `list_push`: `return false` on OOM rather than `assert`; single growth path.
+- [ ] Delete branch `rescue-a1ce250` once you are confident nothing else is needed.
+- [ ] Drop the stale stash `stash@{0}` (the superseded `tokenizer.h` comment deletion).
+- [ ] Delete the stray `~/.config/nvim/dap.lua` on this machine (dead code; the setup script now
+      moves it aside, but it is still sitting there).
+
+## Repo / environment
+
+- [ ] **CI has never run.** The workflow is at `.github/workslows/ci.yml` — the directory is
+      misspelled (`workslows`); GitHub only reads `.github/workflows/`. Rename the directory.
+- [ ] **`.vscode/` is gitignored**, so the working debug config does not travel with the repo.
+      Recreate from `notes/20-debugging-vscode.md`, or commit a template.
+- [x] Enable `lazyvim.plugins.extras.lang.clangd` — was already on (in `lazyvim.json`, via
+      `:LazyExtras` — not in `lazy.lua`'s imports). Verified: clangd attaches to C buffers.
+      See `notes/10-project-and-build.md` (editor tooling) for the whole setup.
+- [ ] Second laptop: `git pull`, `make compile_commands`, and copy one line to its
+      `~/.config/nvim/init.lua` — `vim.g.c_syntax_for_h = true` (kills the `.h` → C++
+      filetype default). See `notes/10-project-and-build.md`.
+- [ ] *(optional, durable)* Switch `origin` to SSH so a locked gnome-keyring can never break
+      pushes/auto-push again (an unencrypted `~/.ssh/id_ed25519` already exists).
+
+## Recently done
+
+- [x] `*` → `TOKEN_STAR`; infinite loop on unknown chars fixed. **7 tests, 0 failed.** `141c958`.
+- [x] Prefix-match bug in `tokenize_word` fixed (length check).
+- [x] Notes split into the routed tree; LazyVim DAP troubleshooting checklist + port-error
+      diagnosis added. `3873996`.
+- [x] `dev` reconciled and back in sync with `origin/dev` (rebase divergence resolved).
