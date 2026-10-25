@@ -122,7 +122,7 @@ static Token tokenize_word(Lexer *lexer, size_t starting_index) {
   for (size_t i = 0; i < (sizeof(KEYWORDS) / sizeof(KEYWORDS[0])); i++) {
     if (newToken.word_length == strlen(KEYWORDS[i].word) &&
         strncasecmp(newToken.input_string, KEYWORDS[i].word,
-                    strlen(newToken.input_string)) == 0) {
+                    newToken.word_length) == 0) {
       newToken.token_type = KEYWORDS[i].keywordType;
     }
   }
