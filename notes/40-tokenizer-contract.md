@@ -72,3 +72,39 @@ the **whole input**. They are not interchangeable.
   `bool had_error` instead of a magic negative.
 - **A token is a span, not a copy.** `word_length = cursor_position - start_index`, and
   `cursor_position` is exclusive (points one past the last consumed char).
+
+## See the span invariant in the debugger (the word_length recipe)
+
+For any bug of the shape "works alone, breaks when input follows the word" — run it live:
+
+**Launch with a multi-word string** (the point is input AFTER the keyword):
+
+- VS Code: `.vscode/launch.json` → "make: scratch (tokenize one string)" →
+  `"args": ["SELECT * FROM users"]` → F5.
+- LazyVim: `lua/plugins/dap.lua` → the scratch config's `args = { "SELECT * FROM users" }` →
+  `<leader>db` on the breakpoint, `<leader>dc` → "minidb: build + debug scratch".
+
+**Breakpoint:** `tokenize_word`, the `strncasecmp(...)` line (only reached when the lengths
+already match — i.e. exactly the interesting comparisons). Optional second breakpoint on the
+match-assignment line (`newToken.token_type = KEYWORDS[i].keywordType;`) — see below.
+
+**Watch pane, first hit (the word `SELECT`, entry `i = 0`):**
+
+| Expression | Value | What it tells you |
+|---|---|---|
+| `newToken.input_string` (as string) | `"SELECT * FROM users"` | the pointer does **not** stop at the word — the span invariant, visible |
+| `newToken.word_length` | `6` | where the word actually ends |
+| `KEYWORDS[i].word` | `"select"` | the entry being compared |
+| `strlen(newToken.input_string)` | `19` | what the buggy third argument passed — the whole remaining source |
+
+**The two-run demonstration:** with `word_length` as the third argument, step over the call:
+`strncasecmp` compares exactly 6 bytes → returns 0 → the match-assignment line **fires**.
+Swap the third argument back to `strlen(newToken.input_string)` and rerun: same hit, `n` is
+now 19, the compare walks past the word (byte 7: `' '` vs the entry's `'\0'`) → nonzero →
+the match-assignment line **never fires** → the token stays `TOKEN_IDENT`. The line that
+never fires is the whole story.
+
+**Why the tests passed with the bug aboard:** every test input ended right after the word —
+`strlen(input_string)` equals `word_length` *by coincidence* (the word ends at the source's
+end). The debugger shows the two values separating the moment anything follows the keyword.
+The guard is a multi-word test: `"SELECT * FROM users"` → `SELECT, STAR, FROM, IDENT, EOF`.
