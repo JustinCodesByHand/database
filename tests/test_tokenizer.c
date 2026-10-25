@@ -117,11 +117,46 @@ static void selection_is_ident_then_eof(void) {
   token_list_free(tknlst);
 }
 
+/* [checklist] position correctness / full statement: "SELECT * FROM users"
+ * keeps every keyword recognized when input FOLLOWS the word — the guard for
+ * the span bug (the third strncasecmp argument is word_length, NOT
+ * strlen(input_string): the word is a span, the source runs past it). */
+static void select_from_users_full_statement(void) {
+  TokenList *tknlst = tokenize_with("SELECT * FROM users");
+  ASSERT_NOT_NULL(tknlst);
+  ASSERT_EQ_INT(5, tknlst->total_num_tkns);
+
+  /* SELECT: 6 chars at index 0 */
+  ASSERT_EQ_INT(TOKEN_SELECT, tknlst->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].start_index);
+  ASSERT_EQ_INT(6, tknlst->token_list_buffer[0].word_length);
+
+  /* STAR: 1 char at index 7 */
+  ASSERT_EQ_INT(TOKEN_STAR, tknlst->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(7, tknlst->token_list_buffer[1].start_index);
+  ASSERT_EQ_INT(1, tknlst->token_list_buffer[1].word_length);
+
+  /* FROM: 4 chars at index 9 */
+  ASSERT_EQ_INT(TOKEN_FROM, tknlst->token_list_buffer[2].token_type);
+  ASSERT_EQ_INT(9, tknlst->token_list_buffer[2].start_index);
+  ASSERT_EQ_INT(4, tknlst->token_list_buffer[2].word_length);
+
+  /* users: an identifier, 5 chars at index 14 */
+  ASSERT_EQ_INT(TOKEN_IDENT, tknlst->token_list_buffer[3].token_type);
+  ASSERT_EQ_INT(14, tknlst->token_list_buffer[3].start_index);
+  ASSERT_EQ_INT(5, tknlst->token_list_buffer[3].word_length);
+
+  /* then the end-of-input marker */
+  ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[4].token_type);
+
+  token_list_free(tknlst);
+}
+
 /* The rest of the checklist (guide line 2610) — write these yourself:
  *   "users" -> TOKEN_IDENT length 5
  *   numbers, strings (quotes excluded), unterminated string error
  *   "<=" -> TOKEN_LTE; "<" alone -> TOKEN_LT
- *   position correctness; full statement; "SELECT@" error
+ *   "SELECT@" error
  *   identifiers with digits/underscores; NOT starting with digit
  *   token_list_free(NULL) is safe
  *   10,000-token stress input
@@ -137,4 +172,5 @@ void suite_tokenizer(void) {
   RUN_TEST(from_case_variant_is_from_then_eof);
   RUN_TEST(from_prefix_is_ident_then_eof);
   RUN_TEST(selection_is_ident_then_eof);
+  RUN_TEST(select_from_users_full_statement);
 }

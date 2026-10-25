@@ -510,3 +510,30 @@ Meanwhile the learner is mid-worksheet on the keyword table (table written at
 tokenizer.c:107, loop pending): the current `-Werror=unused-const-variable` build failure is
 exactly that in-between state, not breakage — the stage-1 checkpoint (identical red) lands
 when the loop replaces the if/else.
+
+## Session 2026-10-25 — keyword table completed; merge incident + repair; main is home
+
+The learner finished the keyword-table worksheet solo (11 entries, the loop, `TOKEN_IDENT`
+default before the loop — the safe landmine placement). Review found the **span bug**: the
+third `strncasecmp` argument was `strlen(newToken.input_string)` — the source's remaining
+length, not the word's — so every keyword followed by more input regressed (`SELECT * FROM
+users;` → SELECT itself became IDENT). The 11-test suite passed anyway **by coincidence**:
+every test input ended right after the word. The learner fixed it (`word_length`) after the
+sizeof/strlen lesson (pointer = 8 bytes; the string behind it only strlen knows — instrument
+in the transcript). The **multi-word guard** `select_from_users_full_statement` (types +
+positions — also the guide's "position correctness" item) is now in: **12 tests, 0 failed**;
+the scratch instrument reads `SELECT, STAR, FROM, IDENT(users), EOF`. A debugger recipe for
+watching the span live was written into notes/40 (`ff55fbd`).
+
+**The merge incident.** The learner merged `dev` into `main` in lazygit; the conflict picks
+took the stale Oct-3 side in five files (pre-rename `TokenType`/`lex_tkn_list`, the 491-line
+pre-tree ainotes, a franken test file from interleaved picks), and the broken merge was
+pushed. Repaired (`dd55245`) by taking dev's five files from the merge's own second parent.
+Two lessons recorded in notes/30: every hunk pick IS the resolution (`b` interleaves); and
+`make test` gates every merge before push.
+
+**Editor clobbering struck again** mid-session (a stale nvim buffer saved the old test file
+over the new one). That nvim session predates the eva01 theme, the clangd
+`--limit-results=4` wiring, and the init.lua revert — it still needs a full `:qa!` and
+reopen. `main` is the working branch now (learner's move); `dev` is retired; the hook pushes
+main. Next: punctuation/operators as real tokens.

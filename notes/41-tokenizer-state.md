@@ -2,21 +2,13 @@
 
 Part of the [notes tree](../ainotes.md). Read before working on the tokenizer.
 
-## Status (verified on disk 2026-10-16)
+## Status (verified on disk 2026-10-25, branch `main`)
 
-**Build is green. 7 tests, 0 failed.**
+**Build is green. 12 tests, 0 failed.**
 
-```
-repl
-  ok   prints_prompt_before_reading
-  ok   exits_on_exit_command
-  ok   exits_cleanly_at_end_of_input
-tokenizer
-  ok   empty_input_is_single_eof
-  ok   whitespace_only_input_is_single_eof
-  ok   select_input_is_select_then_eof
-  ok   star_input_is_star_then_eof
-```
+repl (3) + tokenizer: empty, whitespace-only, `SELECT`, `*`, `FROM`, `fRoM`,
+`fromage`→IDENT, `selection`→IDENT, **`"SELECT * FROM users"` → SELECT/STAR/FROM/IDENT/EOF**
+(types **and** positions — the multi-word guard).
 
 > **Corrections to earlier notes.** The alpha-loop hang is fixed; the **prefix-match bug is
 > fixed and committed** (`word_length == strlen("SELECT") && strncasecmp(...)`); and the
@@ -24,14 +16,16 @@ tokenizer
 
 ## What the lexer handles now
 
-Whitespace (skipped), alphabetic words, `*`, and EOF. Verified with the scratch harness:
+Whitespace (skipped), alphabetic words, `*`, and EOF — plus **all 11 keywords**, recognized
+by the `static const keyword KEYWORDS[]` table + one loop in `tokenize_word` (length check +
+`strncasecmp`; the third argument is **`word_length` — the span**, never
+`strlen(input_string)`; the debugger recipe for watching that lives in
+[40-tokenizer-contract](40-tokenizer-contract.md)):
 
-- `SELECT * FROM users;` → `SELECT, STAR, IDENT(FROM), IDENT(users), EOF` — no hang.
-- `*` → `STAR, EOF`.
-- **Unknown characters** (`,` `;` `(` digits `@` …) are **consumed and silently skipped**.
-  This is a deliberate stopgap so the main loop can never spin forever; they do **not** yet
-  produce tokens or errors.
-- `FROM` (and the other 10 keywords) still lex as `IDENT` — there is no keyword table yet.
+- `SELECT * FROM users` → `SELECT, STAR, FROM, IDENT(users), EOF` — pinned by test.
+- Case-insensitive (`fRoM` → FROM); prefix-safe (`fromage`, `selection` → IDENT).
+- **Unknown characters** (`,` `;` `(` digits `@` …) are still consumed and silently skipped
+  (deliberate stopgap — no tokens or errors yet).
 
 ## Functions present
 
@@ -44,15 +38,14 @@ Whitespace (skipped), alphabetic words, `*`, and EOF. Verified with the scratch 
 | `add_tkn_to_tknlist(TokenList *, Token)` | copies the 4 token fields verbatim |
 | `list_push(TokenList *, Token)` | grow-then-push; returns `false` if `had_error` |
 | `token_list_free(TokenList *)` | NULL-safe, silent |
-| `tokenize_word(Lexer *, size_t)` | builds a word token; **now length-checked** |
+| `tokenize_word(Lexer *, size_t)` | walks the KEYWORDS table; `TOKEN_IDENT` default **before** the loop |
 | `tokenize(const char *)` | main loop: whitespace → word / `*` / skip-unknown |
 
 ## Open defects
 
-1. **Only `"select"` is a keyword.** No keyword table; the other 10 keywords
-   (`FROM, WHERE, INSERT, INTO, VALUES, CREATE, TABLE, DELETE, UPDATE, SET`) lex as
-   `TOKEN_IDENT`. Needs a `static const` table in `tokenizer.c`, matched with `strncasecmp`
-   **plus** a length check.
+1. ~~Only `"select"` is a keyword~~ **CLOSED (2026-10-25):** all 11 keywords live in the
+   `static const` table (`7165518`); the `strlen(input_string)` span bug found in review was
+   fixed (`word_length`) and guarded by `select_from_users_full_statement`.
 2. **`list_push`'s return value is ignored** every time it is called in `tokenize` (both the
    word push and the `*` push). A grow failure is not seen. (The EOF push *does* check it.)
 3. **`grow_list_capisity` returns `void`.** Failure travels as a side effect (`had_error`)

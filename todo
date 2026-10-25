@@ -28,10 +28,9 @@ Full detail lives in `notes/` (start at `ainotes.md`). This file is the short, a
 
 ## Next up — tokenizer (in order)
 
-- [ ] **Keyword table.** Only `"select"` is a keyword; add the other 10
-      (`FROM, WHERE, INSERT, INTO, VALUES, CREATE, TABLE, DELETE, UPDATE, SET`) as a `static
-      const` table in `tokenizer.c` (not the header), matched with `strncasecmp` **plus** the
-      length check. Test case-insensitivity (`select`, `SeLeCt`).
+- [x] **Keyword table** — DONE (2026-10-25): all 11 keywords via the `static const` table +
+      loop; case-insensitive and prefix-safe; the `strlen(input_string)` span bug found in
+      review, fixed (`word_length`), and guarded by the multi-word test.
 - [ ] **Punctuation/operators as real tokens:** `,` `;` `(` `)` first, then `=` `!=` `<` `<=`
       `>` `>=`. Generalise the hand-rolled `*` branch into a small `switch`/table on `peek`.
 - [ ] **Numbers and strings** (quotes excluded; unterminated string → `had_error`).

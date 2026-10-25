@@ -7,35 +7,30 @@ commit, or checking what is stashed.
 > `main` at `5ae9ff9`, and a merged `ch01-repl`. All wrong. **Run `git log --all --decorate`
 > and `git status` before trusting any table here.**
 
-## Current state (verified 2026-10-16)
+## Current state (verified 2026-10-25)
 
 | Thing | Reality |
 |---|---|
-| Branch | `dev` |
-| `dev` vs `origin/dev` | **ahead 1 / behind 1 — DIVERGED** (see below) |
-| Local `dev` HEAD | `8b266f9` (notes + the prefix-match fix, squashed) |
-| `origin/dev` | `a9074d0` (notes only) |
-| Recent `dev` | `8b266f9`, `af5d522` notes tree, `86db7e9` scripts, `e2b07de` notes, `d8e8592` scratch |
+| Branch | **`main` — the working branch since 2026-10-25** (the learner moved; `dev` merged in) |
+| `main` vs `origin/main` | in sync; **the post-commit hook pushes `main` too** |
+| `dev` | merged into `main` by `90c73f9`, then retired; `origin/dev` keeps the pre-merge history |
 | Remote | `origin` = `https://github.com/JustinCodesByHand/database.git` |
-| Remote branches | `origin/main`, `origin/dev`, `origin/parser` |
-| `rescue-a1ce250` | still present (safety branch; safe to delete once confirmed) |
+| Old Oct-16 divergence | RESOLVED long before the merge |
 
-`main` is **not** where the real work is — work happens on `dev`.
+### The merge incident (2026-10-25) — what "a merge that didn't work" actually is
 
-### ⚠️ `dev` diverged from `origin/dev` (2026-10-16)
+The learner merged `dev` into `main` in lazygit; the conflict picks took the **stale Oct-3
+side** in five files — `src/tokenizer.c/h`, `tests/test_tokenizer.c`, `tests/scratch.c`,
+`ainotes.md` — importing pre-rename identifiers (`TokenType`, `lex_tkn_list`) and the
+pre-tree 491-line `ainotes.md`, and the broken merge was pushed. The signature to look for:
+build errors naming identifiers that exist nowhere on the good branch. **A merge picks
+nothing itself — every hunk pick IS the resolution; `b` (pick both) interleaves stale and
+current content** (that produced the franken test file: old bodies, new registrations).
+Repaired in `dd55245` by taking dev's five files from the merge's own second parent.
 
-A `git rebase -i` squashed the prefix-match fix (`6d54fb4 "fix word stringcmp"`) into the
-already-pushed notes commit `a9074d0`, producing `8b266f9`. Rewriting a pushed commit means
-local `dev` no longer contains `a9074d0`, so it is **ahead 1 / behind 1** and the auto-push
-hook cannot fast-forward — **pushes will fail** until this is resolved. It prints a warning
-and keeps the commit; it never forces.
-
-Options:
-- `git push --force-with-lease` — remote `dev` moves to `8b266f9`, which contains everything
-  `a9074d0` had plus the fix. Safe content-wise; use `--force-with-lease`, never bare
-  `--force`. A second machine with the old `dev` then needs `git pull --rebase` (or reset).
-- `git reset --hard origin/dev` then re-commit the fix — avoids a force-push but throws away
-  the squash.
+> [!IMPORTANT]
+> **After any merge, `make test` gates the push.** The broken merge reached `origin/main`
+> because nothing gated it.
 
 ## Stash
 
