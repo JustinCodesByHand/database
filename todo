@@ -1,7 +1,8 @@
 # TODO — MiniDB
 
-Updated: 2026-10-17 · branch `dev` (in sync with `origin/dev`)
-Full detail lives in `notes/` (start at `ainotes.md`). This file is the short, actionable list.
+Updated: 2026-10-26 · branch `main` (in sync with `origin/main`)
+Full detail lives in `notes/` (start at `ainotes.md`). This file is the short, actionable list;
+the ordered, checkpoint-by-checkpoint tokenizer path is in `tokenizer.md`.
 
 ## Bugs to fix
 
@@ -79,4 +80,5 @@ Full detail lives in `notes/` (start at `ainotes.md`). This file is the short, a
 - [x] Prefix-match bug in `tokenize_word` fixed (length check).
 - [x] Notes split into the routed tree; LazyVim DAP troubleshooting checklist + port-error
       diagnosis added. `3873996`.
-- [x] `dev` reconciled and back in sync with `origin/dev` (rebase divergence resolved).
+- [x] `dev` merged into `main`; the first merge needed a five-file conflict repair. `main` is
+      the working branch now; tests gate merges/pushes.

@@ -3,7 +3,7 @@
 **Purpose:** handoff notes for AI-assisted sessions on MiniDB, split into a tree so a
 session reads only what its task needs instead of the whole log.
 
-**Last updated:** 2026-10-17
+**Last updated:** 2026-10-26
 **Working directory:** `/home/jcmac/code/database`
 
 ---
@@ -37,6 +37,7 @@ This file is the **root**, and the only file you always read in full.
 | Git state, auto-push, recover a lost commit | `notes/30-git.md` |
 | Tokenizer — header contract & invariants | `notes/40-tokenizer-contract.md` |
 | Tokenizer — current code & open defects | `notes/41-tokenizer-state.md` |
+| Tokenizer — ordered exercises and graduated hints | `tokenizer.md` |
 | `token_type_name` | `notes/42-token-type-name.md` |
 | `list_push` growth logic | `notes/43-list-push.md` |
 | Recall / learn C concepts (switch, loops, `realloc`, `static`) | `notes/50-concepts-c.md` |
@@ -45,12 +46,12 @@ This file is the **root**, and the only file you always read in full.
 
 **Most sessions:** start with `notes/60-open-items.md`, then the one topic file it points at.
 
-### Current focus (2026-10-16)
+### Current focus (2026-10-26)
 
-Chapter 2 (tokenizer). Build is green — **12 tests, 0 failed** (working branch is `main`
-since 2026-10-25). All 11 keywords tokenize via the table; multi-word statements verified
-(`SELECT * FROM users` → SELECT/STAR/FROM/IDENT/EOF). Next step: punctuation/operators as
-real tokens. Details: [41-tokenizer-state](notes/41-tokenizer-state.md),
+Chapter 2 (tokenizer). Build is green — **12 tests, 0 failed** (working branch is `main`).
+All 11 keywords tokenize via the table; multi-word statements are verified. Next: follow the
+ordered exercise path in [tokenizer.md](tokenizer.md), starting with punctuation/operators.
+Implementation details: [41-tokenizer-state](notes/41-tokenizer-state.md); next steps:
 [60-open-items](notes/60-open-items.md).
 
 **Also open (debugging):** a DAP **"port error"** on the *second laptop* only. Root cause found
@@ -82,6 +83,7 @@ notes/
   21-debugging-neovim.md       nvim-dap setup, keymaps, dap-ui usage
   22-reproduce-debugging.md    scripts/setup-nvim-dap.sh + recreation steps
   23-debug-lazyvim-troubleshoot.md  step-by-step checks when DAP won't work
+  tokenizer.md                 ordered tokenizer tasks + graduated hints
   30-git.md                    branch state, auto-push, detached-HEAD incident
   40-tokenizer-contract.md     the header contract and invariants
   41-tokenizer-state.md        what the code does now + open defects

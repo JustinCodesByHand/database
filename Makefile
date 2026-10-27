@@ -30,8 +30,8 @@ test: $(BUILD)/tests
 # Debugging aid: tokenize one string and print every token it produced.
 #   make scratch
 #   make scratch ARG='"SELECT"'
-# Timeout is deliberate: the current lexer hangs on any non-whitespace input,
-# and a hang with no output is much harder to read than exit=124.
+# Timeout is deliberate: it protects this harness if a future scanner path
+# forgets to consume its input; a hang is easier to diagnose as exit=124.
 scratch: $(BUILD)/scratch
 	@timeout 5 ./$(BUILD)/scratch $(ARG); \
 	 rc=$$?; \

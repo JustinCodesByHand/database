@@ -537,3 +537,18 @@ over the new one). That nvim session predates the eva01 theme, the clangd
 `--limit-results=4` wiring, and the init.lua revert — it still needs a full `:qa!` and
 reopen. `main` is the working branch now (learner's move); `dev` is retired; the hook pushes
 main. Next: punctuation/operators as real tokens.
+## Session 2026-10-26 — ordered tokenizer exercise guide
+
+Learner asked for a `tokenizer.md` modeled on the direction/pacing of Ziglings and
+50-small-c-exercises: ordered tasks, user-visible contracts and examples, and comments/hints
+that leave the implementation to the learner while preserving enough context to stay
+oriented.
+
+Read both references plus the tokenizer chapter in `src/minidb-c-guide.md`. Created root
+`tokenizer.md`: current verified baseline (12/0), shared source-span invariant, ten ordered
+checkpoints from punctuation through full-statement verification, test-first work loop,
+dependency-aware context, and a graduated hint bank at the end (nudge → stronger conceptual
+hint, no completed implementation). It explicitly leaves design forks (lexical-error return
+contract, string escapes, EOF convention, type-name display) undecided rather than guessing.
+Added tokenizer.md to the `ainotes.md` routing/current focus and corrected the stale `todo`
+branch/status label (`main`, current working branch).
