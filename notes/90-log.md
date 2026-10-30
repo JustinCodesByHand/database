@@ -552,3 +552,15 @@ hint, no completed implementation). It explicitly leaves design forks (lexical-e
 contract, string escapes, EOF convention, type-name display) undecided rather than guessing.
 Added tokenizer.md to the `ainotes.md` routing/current focus and corrected the stale `todo`
 branch/status label (`main`, current working branch).
+
+## Session 2026-10-30 — current.md rewritten as the full tokenizer roadmap
+
+Learner reported the current task finished; disk says otherwise in part: keyword table is
+committed (12/0), but punctuation is NOT implemented (tree clean, silent-skip `else` still
+present). Flagged prominently atop the new card — possible unsaved editor buffer; check
+before writing over it. Rewrote tracked `current.md` as the ordered road to the end of
+Chapter 2 (parts 1-10: punctuation → 1-char ops → 2-char ops → identifier spelling → numbers
+→ strings → unknown-char errors + the NULL-vs-had_error contract decision → EOF/list
+robustness/stress → token_type_name → the full-statement checkpoint), each part = Context /
+Questions (the implementation is the learner's) / test-first checkpoint, with the span
+invariant as the header and the per-part hint bank in tokenizer.md as the escape hatch.
