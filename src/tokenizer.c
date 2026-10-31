@@ -114,21 +114,42 @@ static const keyword KEYWORDS[] = {
 // Lexer Helper:
 // creates and returns a new token that starts isalpha()
 static Token tokenize_word(Lexer *lexer, size_t starting_index) {
-  Token newToken;
-  newToken.offset_position = starting_index;
-  newToken.word_length = lexer->cursor_position - newToken.offset_position;
-  newToken.input_string = lexer->input_string + newToken.offset_position;
-  newToken.token_type = TOKEN_IDENT; // default value
+  Token new_word_Token;
+  new_word_Token.offset_position = starting_index;
+  new_word_Token.word_length =
+      lexer->cursor_position - new_word_Token.offset_position;
+  new_word_Token.input_string = lexer->input_string + starting_index;
+  new_word_Token.token_type = TOKEN_IDENT; // default value
 
   for (size_t i = 0; i < (sizeof(KEYWORDS) / sizeof(KEYWORDS[0])); i++) {
-    if (newToken.word_length == strlen(KEYWORDS[i].word) &&
-        strncasecmp(newToken.input_string, KEYWORDS[i].word,
-                    newToken.word_length) == 0) {
-      newToken.token_type = KEYWORDS[i].keywordType;
+    if (new_word_Token.word_length == strlen(KEYWORDS[i].word) &&
+        strncasecmp(new_word_Token.input_string, KEYWORDS[i].word,
+                    new_word_Token.word_length) == 0) {
+      new_word_Token.token_type = KEYWORDS[i].keywordType;
     }
   }
 
-  return newToken;
+  return new_word_Token;
+}
+
+typedef struct {
+  const char *symbol;
+  tokentype punct_type;
+} punctuation;
+
+static const punctuation PUNCTUATIONS[] = {
+    {"*", TOKEN_STAR},
+    {":", TOKEN_SEMICOLON},
+};
+
+// us same pattern as tokenize word
+static Token tokenize_punctuation(Lexer *lexer, size_t starting_index) {
+  Token new_punctuation_token = (Token){
+      TOKEN_IDENT, lexer->input_string + starting_index, 1, starting_index};
+  // FIX: search through list and create and return token
+  for (size_t i = 0; i < (sizeof(PUNCTUATIONS) / sizeof(PUNCTUATIONS)[0]);
+       i++) {
+  }
 }
 
 /*
@@ -175,25 +196,32 @@ TokenList *tokenize(const char *input_string) {
     }
 
     // everything that is not whitespace starts a token here
-    size_t starting_index = lexer.cursor_position;
+    size_t starting_offset_position = lexer.cursor_position;
 
+    // querey the char to see if its a letter
     if (isalpha((unsigned char)peek(&lexer))) {
-      // a word: consume the run of letters, then classify it
+
+      // continue reading word while scanning contunious letters
       while (isalpha((unsigned char)peek(&lexer))) {
         // increment the count until we encounter a non-letter
         lexer.cursor_position += 1;
       }
-      Token word_tkn = tokenize_word(&lexer, starting_index);
+
+      // assign feilds after reading entire word
+      Token word_tkn = tokenize_word(&lexer, starting_offset_position);
       tkn_list_add(lexer.lex_tkn_list_struct, word_tkn);
 
-    } else if (peek(&lexer) == '*') {
-      // a one-character operator: its span is exactly this char
-      lexer.cursor_position += 1;
-      Token star_tkn = {TOKEN_STAR, lexer.input_string + starting_index, 1,
-                        starting_index};
-      tkn_list_add(lexer.lex_tkn_list_struct, star_tkn);
-
     } else {
+      Token tokenize_punctuation_token;
+      switch (peek(&lexer)) {
+      case '*':
+        tokenize_punctuation_token =
+            tokenize_punctuation(&lexer, starting_offset_position);
+        lexer.cursor_position += 1;
+        break;
+
+      case ';':
+      };
       // Unrecognised character (operator, punctuation, digit, ...). We do
       // not tokenise these yet, but we MUST consume one so the loop can
       // never spin forever on the same char.
