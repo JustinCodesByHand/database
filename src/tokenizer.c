@@ -29,7 +29,7 @@ static bool is_at_end(const Lexer *lexer) {
   }
 }
 
-// TODO: instanciate OR grow the list capasity
+// init OR grow the list capasity
 // factor out the conditional logic for instanciation, size extention, else
 static void grow_list_capisity(TokenList *tkn_list_struct) {
   // guard against 0,0 case when doubling memory size
@@ -55,12 +55,12 @@ static void grow_list_capisity(TokenList *tkn_list_struct) {
 
 // Helper for list_push
 // assigns new token valies to next index in the tkn_list_struct
-static void add_tkn_to_tknlist(TokenList *tkn_list_struct, Token newToken) {
+static void addToStruct(TokenList *tkn_list_struct, Token newToken) {
   // append tokenDATA to TokenList
   tkn_list_struct->token_list_buffer[tkn_list_struct->total_num_tkns - 1]
       .token_type = newToken.token_type;
   tkn_list_struct->token_list_buffer[tkn_list_struct->total_num_tkns - 1]
-      .start_index = newToken.start_index;
+      .offset_position = newToken.offset_position;
   tkn_list_struct->token_list_buffer[tkn_list_struct->total_num_tkns - 1]
       .input_string = newToken.input_string;
   tkn_list_struct->token_list_buffer[tkn_list_struct->total_num_tkns - 1]
@@ -70,7 +70,7 @@ static void add_tkn_to_tknlist(TokenList *tkn_list_struct, Token newToken) {
 // lexer Helper that adds new tokens to its list
 // realloc memory if list grows to bigggg
 //  transfers data from new token to tokenlist
-static bool list_push(TokenList *tkn_list_struct, Token newToken) {
+static bool tkn_list_add(TokenList *tkn_list_struct, Token newToken) {
 
   if (tkn_list_struct->tknlst_capacity == tkn_list_struct->total_num_tkns) {
     grow_list_capisity(tkn_list_struct);
@@ -78,10 +78,15 @@ static bool list_push(TokenList *tkn_list_struct, Token newToken) {
 
   if (tkn_list_struct->had_error == true) {
     // TODO: assign error_msg paramaters
+    newToken.token_type = token_error;
+    tkn_list_struct->had_error = true;
+    tkn_list_struct->error_pos = newToken.offset_position;
+    tkn_list_struct->error_msg =
+        "grow_list_capisity threw an error, it uses malloc and realloc";
     return false;
   } else {
     tkn_list_struct->total_num_tkns += 1;
-    add_tkn_to_tknlist(tkn_list_struct, newToken);
+    addToStruct(tkn_list_struct, newToken);
     return true;
   }
 }
@@ -94,10 +99,6 @@ void token_list_free(TokenList *tkn_list_struct) {
     free(tkn_list_struct);
   }
 }
-
-// Lexer Helper
-// increrment cursor position, so peek() sees next character
-static void increment_cursor(Lexer *lexer) { lexer->cursor_position += 1; }
 
 typedef struct {
   const char *word;
@@ -114,9 +115,9 @@ static const keyword KEYWORDS[] = {
 // creates and returns a new token that starts isalpha()
 static Token tokenize_word(Lexer *lexer, size_t starting_index) {
   Token newToken;
-  newToken.start_index = starting_index;
-  newToken.word_length = lexer->cursor_position - newToken.start_index;
-  newToken.input_string = lexer->input_string + newToken.start_index;
+  newToken.offset_position = starting_index;
+  newToken.word_length = lexer->cursor_position - newToken.offset_position;
+  newToken.input_string = lexer->input_string + newToken.offset_position;
   newToken.token_type = TOKEN_IDENT; // default value
 
   for (size_t i = 0; i < (sizeof(KEYWORDS) / sizeof(KEYWORDS[0])); i++) {
@@ -155,18 +156,20 @@ TokenList *tokenize(const char *input_string) {
   lexer.cursor_position = 0;
   lexer.lex_tkn_list_struct = lexers_tkn_list;
 
-  // loopty loop time
-  // looks at each char and does something idk
+  // loopty loop time ie. main loop
+  // looks at each char and adds a token to the higher level token list struct
+  // which is inside the higher level token_list_buffer
 
   // while we have not encountered '\0'
   while (!is_at_end(&lexer)) {
 
     // consume whitespaces and increment the current cursor position
     while (isspace((unsigned char)peek(&lexer))) {
-      increment_cursor(&lexer);
+      lexer.cursor_position += 1;
     }
 
-    // trailing whitespace: nothing is left but the EOF marker
+    // trailinr whitespace: nothing is left but the EOF marker
+    // r
     if (is_at_end(&lexer)) {
       break;
     }
@@ -178,17 +181,17 @@ TokenList *tokenize(const char *input_string) {
       // a word: consume the run of letters, then classify it
       while (isalpha((unsigned char)peek(&lexer))) {
         // increment the count until we encounter a non-letter
-        increment_cursor(&lexer);
+        lexer.cursor_position += 1;
       }
       Token word_tkn = tokenize_word(&lexer, starting_index);
-      list_push(lexer.lex_tkn_list_struct, word_tkn);
+      tkn_list_add(lexer.lex_tkn_list_struct, word_tkn);
 
     } else if (peek(&lexer) == '*') {
       // a one-character operator: its span is exactly this char
-      increment_cursor(&lexer);
+      lexer.cursor_position += 1;
       Token star_tkn = {TOKEN_STAR, lexer.input_string + starting_index, 1,
                         starting_index};
-      list_push(lexer.lex_tkn_list_struct, star_tkn);
+      tkn_list_add(lexer.lex_tkn_list_struct, star_tkn);
 
     } else {
       // Unrecognised character (operator, punctuation, digit, ...). We do
@@ -197,13 +200,13 @@ TokenList *tokenize(const char *input_string) {
       // TODO: emit real tokens (e.g. ';' -> TOKEN_SEMICOLON) and/or error
       // reporting (error_msg + error_pos + had_error) — see the open design
       // question about how OOM/lex errors should surface.
-      increment_cursor(&lexer);
+      lexer.cursor_position += 1;
     }
   }
   // if we read '\0', then make EOF token and exit
   if (is_at_end(&lexer) == true) {
     Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
-    bool add_to_list = list_push(lexer.lex_tkn_list_struct, eof_tkn);
+    bool add_to_list = tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
 
     if (!add_to_list && (lexer.lex_tkn_list_struct->had_error == true)) {
       lexer.lex_tkn_list_struct->had_error = false;

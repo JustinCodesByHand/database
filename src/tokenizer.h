@@ -38,7 +38,7 @@ typedef struct {
   tokentype token_type;
   const char *input_string;
   size_t word_length;
-  size_t start_index;
+  size_t offset_position;
 } Token;
 
 typedef struct {
