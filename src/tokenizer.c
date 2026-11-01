@@ -76,18 +76,18 @@ static bool tkn_list_add(TokenList *tkn_list_struct, Token newToken) {
     grow_list_capisity(tkn_list_struct);
   }
 
-  if (tkn_list_struct->had_error == true) {
+  if (tkn_list_struct->had_error != true) {
     // TODO: assign error_msg paramaters
+    tkn_list_struct->total_num_tkns += 1;
+    addToStruct(tkn_list_struct, newToken);
+    return true;
+  } else {
     newToken.token_type = token_error;
     tkn_list_struct->had_error = true;
     tkn_list_struct->error_pos = newToken.offset_position;
     tkn_list_struct->error_msg =
         "grow_list_capisity threw an error, it uses malloc and realloc";
     return false;
-  } else {
-    tkn_list_struct->total_num_tkns += 1;
-    addToStruct(tkn_list_struct, newToken);
-    return true;
   }
 }
 
@@ -144,12 +144,20 @@ static const punctuation PUNCTUATIONS[] = {
 
 // us same pattern as tokenize word
 static Token tokenize_punctuation(Lexer *lexer, size_t starting_index) {
+
   Token new_punctuation_token = (Token){
       TOKEN_IDENT, lexer->input_string + starting_index, 1, starting_index};
-  // FIX: search through list and create and return token
+
   for (size_t i = 0; i < (sizeof(PUNCTUATIONS) / sizeof(PUNCTUATIONS)[0]);
        i++) {
+    if ((strncasecmp(lexer->input_string, PUNCTUATIONS[i].symbol,
+                     new_punctuation_token.word_length)) == 0) {
+      new_punctuation_token.token_type = PUNCTUATIONS[i].punct_type;
+      return new_punctuation_token;
+    }
   }
+  // lexer->lex_tkn_list_struct->had_error = true;
+  return new_punctuation_token;
 }
 
 /*
@@ -212,15 +220,26 @@ TokenList *tokenize(const char *input_string) {
       tkn_list_add(lexer.lex_tkn_list_struct, word_tkn);
 
     } else {
-      Token tokenize_punctuation_token;
+      Token punctuation_token;
+      bool made_punct = false;
       switch (peek(&lexer)) {
       case '*':
-        tokenize_punctuation_token =
+        punctuation_token =
             tokenize_punctuation(&lexer, starting_offset_position);
         lexer.cursor_position += 1;
+        made_punct = true;
         break;
 
       case ';':
+        punctuation_token =
+            tokenize_punctuation(&lexer, starting_offset_position);
+        lexer.cursor_position += 1;
+        made_punct = true;
+        break;
+
+      default:
+        lexer.cursor_position += 1;
+        break;
       };
       // Unrecognised character (operator, punctuation, digit, ...). We do
       // not tokenise these yet, but we MUST consume one so the loop can
@@ -228,19 +247,19 @@ TokenList *tokenize(const char *input_string) {
       // TODO: emit real tokens (e.g. ';' -> TOKEN_SEMICOLON) and/or error
       // reporting (error_msg + error_pos + had_error) — see the open design
       // question about how OOM/lex errors should surface.
-      lexer.cursor_position += 1;
+      if (made_punct) {
+        tkn_list_add(lexer.lex_tkn_list_struct, punctuation_token);
+      }
     }
   }
-  // if we read '\0', then make EOF token and exit
-  if (is_at_end(&lexer) == true) {
-    Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
-    bool add_to_list = tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
+  // if we read '\0', then make EOF token and exit (we always are at end here)
+  Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
+  bool add_to_list = tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
 
-    if (!add_to_list && (lexer.lex_tkn_list_struct->had_error == true)) {
-      lexer.lex_tkn_list_struct->had_error = false;
-      fprintf(stderr, "%s", "errorrrr");
-      return NULL;
-    }
+  if (!add_to_list && (lexer.lex_tkn_list_struct->had_error == true)) {
+    lexer.lex_tkn_list_struct->had_error = false;
+    fprintf(stderr, "%s", "errorrrr");
+    return NULL;
   }
 
   return lexers_tkn_list;

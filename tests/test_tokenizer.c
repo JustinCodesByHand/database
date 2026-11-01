@@ -34,7 +34,7 @@ static void select_input_is_select_then_eof(void) {
 
   /* the keyword: starts at index 0 and spans the 6 characters "SELECT" */
   ASSERT_EQ_INT(TOKEN_SELECT, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].start_index);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
   ASSERT_EQ_INT(6, tknlst->token_list_buffer[0].word_length);
 
   /* then the end-of-input marker */
@@ -51,7 +51,7 @@ static void star_input_is_star_then_eof(void) {
 
   /* the operator: one character, at index 0 */
   ASSERT_EQ_INT(TOKEN_STAR, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].start_index);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
   ASSERT_EQ_INT(1, tknlst->token_list_buffer[0].word_length);
 
   /* then the end-of-input marker */
@@ -68,7 +68,7 @@ static void from_input_is_from_then_eof(void) {
 
   /* the keyword: starts at index 0 and spans the 4 characters "FROM" */
   ASSERT_EQ_INT(TOKEN_FROM, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].start_index);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
   ASSERT_EQ_INT(4, tknlst->token_list_buffer[0].word_length);
 
   /* then the end-of-input marker */
@@ -95,7 +95,7 @@ static void from_prefix_is_ident_then_eof(void) {
   ASSERT_EQ_INT(2, tknlst->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].start_index);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
   ASSERT_EQ_INT(7, tknlst->token_list_buffer[0].word_length);
   ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[1].token_type);
 
@@ -110,7 +110,7 @@ static void selection_is_ident_then_eof(void) {
   ASSERT_EQ_INT(2, tknlst->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].start_index);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
   ASSERT_EQ_INT(9, tknlst->token_list_buffer[0].word_length);
   ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[1].token_type);
 
@@ -128,22 +128,22 @@ static void select_from_users_full_statement(void) {
 
   /* SELECT: 6 chars at index 0 */
   ASSERT_EQ_INT(TOKEN_SELECT, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].start_index);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
   ASSERT_EQ_INT(6, tknlst->token_list_buffer[0].word_length);
 
   /* STAR: 1 char at index 7 */
   ASSERT_EQ_INT(TOKEN_STAR, tknlst->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(7, tknlst->token_list_buffer[1].start_index);
+  ASSERT_EQ_INT(7, tknlst->token_list_buffer[1].offset_position);
   ASSERT_EQ_INT(1, tknlst->token_list_buffer[1].word_length);
 
   /* FROM: 4 chars at index 9 */
   ASSERT_EQ_INT(TOKEN_FROM, tknlst->token_list_buffer[2].token_type);
-  ASSERT_EQ_INT(9, tknlst->token_list_buffer[2].start_index);
+  ASSERT_EQ_INT(9, tknlst->token_list_buffer[2].offset_position);
   ASSERT_EQ_INT(4, tknlst->token_list_buffer[2].word_length);
 
   /* users: an identifier, 5 chars at index 14 */
   ASSERT_EQ_INT(TOKEN_IDENT, tknlst->token_list_buffer[3].token_type);
-  ASSERT_EQ_INT(14, tknlst->token_list_buffer[3].start_index);
+  ASSERT_EQ_INT(14, tknlst->token_list_buffer[3].offset_position);
   ASSERT_EQ_INT(5, tknlst->token_list_buffer[3].word_length);
 
   /* then the end-of-input marker */
