@@ -70,3 +70,45 @@ by the `static const keyword KEYWORDS[]` table + one loop in `tokenize_word` (le
 
 **Absent helpers the guide lists:** `peek_next`, `match`, `scan_number`, `scan_identifier`,
 `scan_string`.
+
+## Work in progress — punctuation (Part 1 of `tokenizer.md`)
+
+**Started 2026-10-31.** The user is implementing punctuation recognition (`*`, `;` so far).
+Changes are uncommitted.
+
+### Current structure on disk
+
+- `PUNCTUATIONS[]` table: `{"*", TOKEN_STAR}`, `{":", TOKEN_SEMICOLON}` — note the second
+  entry's symbol vs. the guide's `;`.
+- `tokenize_punctuation(Lexer *, size_t)` — scans the table, uses `strncasecmp`.
+- Main loop: `switch (peek(&lexer))` handles `*` and `;`, with a `made_punct` flag
+  gating `tkn_list_add`. Unknown chars fall through to `default` (consume one, no push).
+- `tkn_list_add` (renamed from `list_push`) sets `had_error` on grow failure; the
+  `tokenize_punctuation` path also sets `had_error` when no table entry matches.
+
+### Debugging observations (user's own)
+
+- The `input_string` pointer for the new punctuation token correctly points at the
+  punctuation character (e.g. `*`), with the rest of the source following it — this is
+  correct span behavior.
+- The function takes the `had_error` exit route (returns NULL), causing the test to fail
+  and leaking memory on the error path.
+- The user identified that **the table comparison is the culprit**.
+- The user asked: "what do you think about using the `had_error` flag to determine whether
+  I push the punctuation?" — see the design discussion in the 2026-10-31 session notes.
+
+### Design questions still open
+
+1. Should `had_error` gate pushing punctuation tokens? (Recommendation: no — use a local
+   flag; `had_error` is sticky and conflates "an error occurred" with "this token is
+   invalid". See the notes above.)
+2. The `PUNCTUATIONS` table symbols vs. what `strncasecmp` compares against — is the
+   comparison starting from the right offset?
+3. The `:` vs `;` entry — intentional or typo?
+
+### To resume
+
+Set a breakpoint at `tokenize_punctuation` entry. Watch `starting_index`,
+`lexer->cursor_position`, and what `strncasecmp`'s first argument points at. Compare with
+`new_punctuation_token.input_string`. The mismatch between those two pointers is where the
+bug lives.
