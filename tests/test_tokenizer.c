@@ -162,6 +162,226 @@ static void select_from_users_full_statement(void) {
  *   10,000-token stress input
  */
 
+/* [Part 1] "," is TOKEN_COMMA. */
+static void comma_is_comma_then_eof(void) {
+  TokenList *l = tokenize_with(",");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_COMMA, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 1] ";" is TOKEN_SEMICOLON. */
+static void semicolon_is_semicolon_then_eof(void) {
+  TokenList *l = tokenize_with(";");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_SEMICOLON, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 1] "(" is TOKEN_LPAREN. */
+static void lparen_is_lparen_then_eof(void) {
+  TokenList *l = tokenize_with("(");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_LPAREN, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 1] ")" is TOKEN_RPAREN. */
+static void rparen_is_rparen_then_eof(void) {
+  TokenList *l = tokenize_with(")");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_RPAREN, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 1] "a,b" -> IDENT, COMMA, IDENT, EOF (4 tokens). */
+static void ident_comma_ident(void) {
+  TokenList *l = tokenize_with("a,b");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(4, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_COMMA, l->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].word_length);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[2].token_type);
+  ASSERT_EQ_INT(2, l->token_list_buffer[2].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[2].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[3].token_type);
+  token_list_free(l);
+}
+
+/* [Part 2] "=" is TOKEN_EQ. */
+static void eq_is_eq_then_eof(void) {
+  TokenList *l = tokenize_with("=");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_EQ, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 2] "<" is TOKEN_LT. */
+static void lt_is_lt_then_eof(void) {
+  TokenList *l = tokenize_with("<");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_LT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 2] ">" is TOKEN_GT. */
+static void gt_is_gt_then_eof(void) {
+  TokenList *l = tokenize_with(">");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_GT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 2] "a>b" -> IDENT, GT, IDENT, EOF. */
+static void ident_gt_ident(void) {
+  TokenList *l = tokenize_with("a>b");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(4, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_GT, l->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].word_length);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[2].token_type);
+  ASSERT_EQ_INT(2, l->token_list_buffer[2].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[2].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[3].token_type);
+  token_list_free(l);
+}
+
+/* [Part 3] "<=" is TOKEN_LTE, len 2. */
+static void lte_twochar(void) {
+  TokenList *l = tokenize_with("<=");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_LTE, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 3] ">=" is TOKEN_GTE, len 2. */
+static void gte_twochar(void) {
+  TokenList *l = tokenize_with(">=");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_GTE, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 3] "!=" is TOKEN_NEQ, len 2. */
+static void neq_twochar(void) {
+  TokenList *l = tokenize_with("!=");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_NEQ, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 3] trap: "<" alone is still TOKEN_LT (len 1). */
+static void lt_single_still_lt(void) {
+  TokenList *l = tokenize_with("<");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_LT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 3] trap: "a<b" -> IDENT, LT, IDENT, EOF. */
+static void ident_lt_ident(void) {
+  TokenList *l = tokenize_with("a<b");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(4, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_LT, l->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].word_length);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[2].token_type);
+  ASSERT_EQ_INT(2, l->token_list_buffer[2].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[2].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[3].token_type);
+  token_list_free(l);
+}
+
+/* [Part 3] trap: "a<=b" -> IDENT, LTE, IDENT, EOF. */
+static void ident_lte_ident(void) {
+  TokenList *l = tokenize_with("a<=b");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(4, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_LTE, l->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].offset_position);
+  ASSERT_EQ_INT(2, l->token_list_buffer[1].word_length);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[2].token_type);
+  ASSERT_EQ_INT(3, l->token_list_buffer[2].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[2].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[3].token_type);
+  token_list_free(l);
+}
+
 void suite_tokenizer(void) {
   SUITE("tokenizer");
   RUN_TEST(empty_input_is_single_eof);
@@ -173,4 +393,25 @@ void suite_tokenizer(void) {
   RUN_TEST(from_prefix_is_ident_then_eof);
   RUN_TEST(selection_is_ident_then_eof);
   RUN_TEST(select_from_users_full_statement);
+
+  /* Part 1 - punctuation */
+  RUN_TEST(comma_is_comma_then_eof);
+  RUN_TEST(semicolon_is_semicolon_then_eof);
+  RUN_TEST(lparen_is_lparen_then_eof);
+  RUN_TEST(rparen_is_rparen_then_eof);
+  RUN_TEST(ident_comma_ident);
+
+  /* Part 2 - single-char operators */
+  RUN_TEST(eq_is_eq_then_eof);
+  RUN_TEST(lt_is_lt_then_eof);
+  RUN_TEST(gt_is_gt_then_eof);
+  RUN_TEST(ident_gt_ident);
+
+  /* Part 3 - two-char operators */
+  RUN_TEST(lte_twochar);
+  RUN_TEST(gte_twochar);
+  RUN_TEST(neq_twochar);
+  RUN_TEST(lt_single_still_lt);
+  RUN_TEST(ident_lt_ident);
+  RUN_TEST(ident_lte_ident);
 }

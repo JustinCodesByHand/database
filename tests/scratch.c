@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     printf("  [%zu] %-9s pos=%-3zu len=%-3zu text=\"%.*s\"\n",
            i,
            scratch_type_name(t->token_type),
-           t->start_index,
+           t->offset_position,
            t->word_length,
            (int)t->word_length,   /* %.*s wants int; word_length is size_t */
            t->input_string);
