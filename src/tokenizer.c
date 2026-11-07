@@ -138,35 +138,26 @@ typedef struct {
 } punctuation;
 
 static const punctuation PUNCTUATIONS[] = {
-    {"*", TOKEN_STAR},   {",", TOKEN_COMMA},   {";", TOKEN_SEMICOLON},
-    {"(", TOKEN_LPAREN}, {")", TOKEN_RPAREN},  {"=", TOKEN_EQ},
-    {"!=", TOKEN_NEQ},   {"<", TOKEN_LT},      {"<=", TOKEN_LTE},
-    {">", TOKEN_GT},     {">=", TOKEN_GTE},
-};
+    {"*", TOKEN_STAR},      {":", TOKEN_SEMICOLON}, {",", TOKEN_COMMA},
+    {";", TOKEN_SEMICOLON}, {"(", TOKEN_LPAREN},    {")", TOKEN_RPAREN},
+    {"=", TOKEN_EQ},        {"!=", TOKEN_NEQ},      {"<", TOKEN_LT},
+    {"<=", TOKEN_LTE},      {">", TOKEN_GT},        {">=", TOKEN_GTE}};
 
-// Longest-match over the punctuation table (so "<=" wins over "<").
+// us same pattern as tokenize word
 static Token tokenize_punctuation(Lexer *lexer, size_t starting_index) {
-  Token new_punctuation_token = (Token){
-      TOKEN_IDENT, lexer->input_string + starting_index, 0, starting_index};
 
-  size_t best_len = 0;
-  tokentype best_type = TOKEN_IDENT;
-  for (size_t i = 0; i < (sizeof(PUNCTUATIONS) / sizeof(PUNCTUATIONS[0]));
+  Token new_punctuation_token = (Token){
+      TOKEN_IDENT, lexer->input_string + starting_index, 1, starting_index};
+
+  for (size_t i = 0; i < (sizeof(PUNCTUATIONS) / sizeof(PUNCTUATIONS)[0]);
        i++) {
-    size_t slen = strlen(PUNCTUATIONS[i].symbol);
-    if (strncasecmp(new_punctuation_token.input_string,
-                    PUNCTUATIONS[i].symbol, slen) == 0 &&
-        slen > best_len) {
-      best_len = slen;
-      best_type = PUNCTUATIONS[i].punct_type;
+    if ((strncasecmp(new_punctuation_token.input_string, PUNCTUATIONS[i].symbol,
+                     new_punctuation_token.word_length)) == 0) {
+      new_punctuation_token.token_type = PUNCTUATIONS[i].punct_type;
+      return new_punctuation_token;
     }
   }
-  if (best_len > 0) {
-    new_punctuation_token.token_type = best_type;
-    new_punctuation_token.word_length = best_len;
-  } else {
-    new_punctuation_token.word_length = 1; // consume one char when skipping
-  }
+  // lexer->lex_tkn_list_struct->had_error = true;
   return new_punctuation_token;
 }
 
@@ -230,21 +221,35 @@ TokenList *tokenize(const char *input_string) {
       tkn_list_add(lexer.lex_tkn_list_struct, word_tkn);
 
     } else {
-      unsigned char c = peek(&lexer);
-      bool is_punct_start = (c == '*' || c == ',' || c == ';' || c == '(' ||
-                             c == ')' || c == '=' || c == '<' || c == '>' ||
-                             c == '!');
-      if (is_punct_start) {
-        Token punctuation_token =
+      Token punctuation_token;
+      bool made_punct = false;
+      switch (peek(&lexer)) {
+      case '*':
+        punctuation_token =
             tokenize_punctuation(&lexer, starting_offset_position);
-        if (punctuation_token.token_type != TOKEN_IDENT) {
-          tkn_list_add(lexer.lex_tkn_list_struct, punctuation_token);
-          lexer.cursor_position += punctuation_token.word_length;
-        } else {
-          lexer.cursor_position += 1; // unknown (e.g. lone '!'): skip
-        }
-      } else {
-        lexer.cursor_position += 1; // unknown char: skip
+        lexer.cursor_position += 1;
+        made_punct = true;
+        break;
+
+      case ';':
+        punctuation_token =
+            tokenize_punctuation(&lexer, starting_offset_position);
+        lexer.cursor_position += 1;
+        made_punct = true;
+        break;
+
+      default:
+        lexer.cursor_position += 1;
+        break;
+      };
+      // Unrecognised character (operator, punctuation, digit, ...). We do
+      // not tokenise these yet, but we MUST consume one so the loop can
+      // never spin forever on the same char.
+      // TODO: emit real tokens (e.g. ';' -> TOKEN_SEMICOLON) and/or error
+      // reporting (error_msg + error_pos + had_error) — see the open design
+      // question about how OOM/lex errors should surface.
+      if (made_punct) {
+        tkn_list_add(lexer.lex_tkn_list_struct, punctuation_token);
       }
     }
   }
