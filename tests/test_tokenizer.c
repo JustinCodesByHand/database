@@ -382,6 +382,62 @@ static void ident_lte_ident(void) {
   token_list_free(l);
 }
 
+/* [Part 4] "user_id2" is ONE TOKEN_IDENT spanning 8 chars. */
+static void user_id2_is_ident_len8(void) {
+  TokenList *l = tokenize_with("user_id2");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(8, l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 4] "users" still TOKEN_IDENT (len 5) — regression. */
+static void users_still_ident_len5(void) {
+  TokenList *l = tokenize_with("users");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(5, l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 4] "set" is still TOKEN_SET — keyword behavior unchanged. */
+static void set_still_set(void) {
+  TokenList *l = tokenize_with("set");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_SET, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(3, l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 4] "seti" is ONE TOKEN_IDENT (len 4) — prefix guard survives. */
+static void seti_still_ident(void) {
+  TokenList *l = tokenize_with("seti");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(4, l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
 void suite_tokenizer(void) {
   SUITE("tokenizer");
   RUN_TEST(empty_input_is_single_eof);
@@ -414,4 +470,10 @@ void suite_tokenizer(void) {
   RUN_TEST(lt_single_still_lt);
   RUN_TEST(ident_lt_ident);
   RUN_TEST(ident_lte_ident);
+
+  /* Part 4 - identifier spelling */
+  RUN_TEST(user_id2_is_ident_len8);
+  RUN_TEST(users_still_ident_len5);
+  RUN_TEST(set_still_set);
+  RUN_TEST(seti_still_ident);
 }

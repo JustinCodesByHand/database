@@ -231,6 +231,13 @@ TokenList *tokenize(const char *input_string) {
         made_punct = true;
         break;
 
+      case ',':
+        punctuation_token =
+            tokenize_punctuation(&lexer, starting_offset_position);
+        lexer.cursor_position += 1;
+        made_punct = true;
+        break;
+
       case ';':
         punctuation_token =
             tokenize_punctuation(&lexer, starting_offset_position);
@@ -238,6 +245,73 @@ TokenList *tokenize(const char *input_string) {
         made_punct = true;
         break;
 
+      case '(':
+        punctuation_token =
+            tokenize_punctuation(&lexer, starting_offset_position);
+        lexer.cursor_position += 1;
+        made_punct = true;
+        break;
+
+      case ')':
+        punctuation_token =
+            tokenize_punctuation(&lexer, starting_offset_position);
+        lexer.cursor_position += 1;
+        made_punct = true;
+        break;
+
+      case '=':
+        punctuation_token =
+            tokenize_punctuation(&lexer, starting_offset_position);
+        lexer.cursor_position += 1;
+        made_punct = true;
+        break;
+
+      case '<':
+        /* TODO: 2-byte case — lookahead for <= (consume 2) vs < (consume 1) */
+        if (lexer.input_string[lexer.cursor_position + 1] == '=') {
+          punctuation_token =
+              (Token){TOKEN_LTE, lexer.input_string + starting_offset_position,
+                      2, starting_offset_position};
+          lexer.cursor_position += 2;
+          made_punct = true;
+          break;
+        } else {
+          punctuation_token =
+              tokenize_punctuation(&lexer, starting_offset_position);
+          lexer.cursor_position += 1;
+          made_punct = true;
+          break;
+        }
+
+      case '>':
+        if (lexer.input_string[lexer.cursor_position + 1] == '=') {
+          punctuation_token =
+              (Token){TOKEN_GTE, lexer.input_string + starting_offset_position,
+                      2, starting_offset_position};
+          lexer.cursor_position += 2;
+          made_punct = true;
+          break;
+        } else {
+          punctuation_token =
+              tokenize_punctuation(&lexer, starting_offset_position);
+          lexer.cursor_position += 1;
+          made_punct = true;
+          break;
+        }
+      case '!':
+        /* TODO: 2-byte case — lookahead for != (consume 2); ! alone has no
+         * token */
+        if (lexer.input_string[lexer.cursor_position + 1] == '=') {
+          punctuation_token =
+              (Token){TOKEN_NEQ, lexer.input_string + starting_offset_position,
+                      2, starting_offset_position};
+          lexer.cursor_position += 2;
+          made_punct = true;
+          break;
+        } else {
+          lexer.cursor_position += 1;
+          break;
+        }
       default:
         lexer.cursor_position += 1;
         break;
