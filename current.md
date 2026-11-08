@@ -95,19 +95,44 @@ should have consumed two.
 a digit. The keyword lookup in `tokenize_word` stays exactly as it is — it receives spans,
 not characters.
 
-**Questions:**
-- Where in `tokenize` does the word's *first* character get decided, and where does the run
-  get consumed? Is the predicate for byte 1 the same as for bytes 2..n?
-- `"_name"`: legal by the guide? The guide bans a leading *digit* and says nothing about a
-  leading underscore — decide, write it in a comment, test your decision. (Ambiguous spec →
-  explicit call is the skill.)
-- What does `"2users"` do under your current code, and what *should* it do? (Number scanner
-  is Part 5 — note the interaction, don't solve it twice.)
+**The code on disk:** the word-scanning code has two `isalpha` calls:
 
-**Test first:** `"user_id2"` → IDENT len 8. `"users"` stays IDENT len 5 (regression). Keyword
-behavior unchanged: `"set"` is still SET, `"seti"` still IDENT.
+```c
+if (isalpha((unsigned char)peek(&lexer))) {       // byte 1
+    while (isalpha((unsigned char)peek(&lexer))) {  // bytes 2..n
+```
 
-**Checkpoint:** identifiers can now contain `_` and digits-not-at-front; no keyword test moved.
+Both use the *same* predicate. The guide wants: **byte 1** stays `isalpha` (no leading
+digit), but **bytes 2..n** also accept digits and underscores. So the two predicates become
+**different** — one for the `if`, one for the `while`.
+
+The reason you need both: the `if` asks "is this the start of an identifier?" while the
+`while` asks "is this still part of the same identifier?" The first character has stricter
+rules than the rest — that's the whole point of the exercise.
+
+**The gotcha:** the broader predicate must still *include* `isalpha`, or you'll exit
+immediately after the first char. The broader predicate *subsumes* the stricter one — it
+doesn't replace it. And `isdigit`/`isalpha` take an `int` that must be `unsigned char` or
+`EOF` — cast: `isdigit((unsigned char)peek(&lexer))`.
+
+**The two decisions Part 4 forces:**
+
+1. **`"_name"`**: the guide bans a leading *digit* and says nothing about a leading
+   underscore. Is it legal? The guide is silent → ambiguous spec → make an explicit call,
+   write it in a comment, test your decision. (If you allow it, the `if` changes too —
+   that's a bigger call with a lasting consequence: `_select` becomes IDENT, not SELECT.)
+
+2. **`"2users"`**: today, `2` is not alpha → falls through to the switch → `default` →
+   consumed as unknown (skipped). Then `users` → IDENT. So `"2users"` → IDENT("users") + EOF,
+   with `2` dropped. Numbers are Part 5's problem — note the interaction, don't solve it
+   twice here.
+
+**Test first:** `"user_id2"` → IDENT len 8. `"users"` stays IDENT len 5 (regression).
+Keyword behavior unchanged: `"set"` is still SET, `"seti"` still IDENT.
+
+**Checkpoint:** identifiers contain `_` and digits (not at front); no keyword test moved; no
+Part 5 code written. Existing 27 stay green. Then the multi-word guard (already passing)
+should still be green after your change.
 
 ## Part 5 — numbers
 
