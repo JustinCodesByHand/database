@@ -132,6 +132,16 @@ static Token tokenize_word(Lexer *lexer, size_t starting_index) {
   return new_word_Token;
 }
 
+static Token tokenize_number(Lexer *lexer, size_t starting_index) {
+  Token number_token;
+  number_token.token_type = TOKEN_NUMBER;
+  number_token.offset_position = starting_index;
+  number_token.word_length = lexer->cursor_position - starting_index;
+  number_token.input_string = lexer->input_string + starting_index;
+
+  return number_token;
+}
+
 typedef struct {
   const char *symbol;
   tokentype punct_type;
@@ -211,7 +221,8 @@ TokenList *tokenize(const char *input_string) {
     if (isalpha((unsigned char)peek(&lexer))) {
 
       // continue reading word while scanning contunious letters
-      while (isalpha((unsigned char)peek(&lexer))) {
+      while (isalpha((unsigned char)peek(&lexer)) ||
+             isdigit((unsigned char)peek(&lexer)) || peek(&lexer) == '_') {
         // increment the count until we encounter a non-letter
         lexer.cursor_position += 1;
       }
@@ -219,8 +230,17 @@ TokenList *tokenize(const char *input_string) {
       // assign feilds after reading entire word
       Token word_tkn = tokenize_word(&lexer, starting_offset_position);
       tkn_list_add(lexer.lex_tkn_list_struct, word_tkn);
+    }
+    // TODO: parse span of digits as number token
+    else if (isdigit((unsigned char)peek(&lexer))) {
+      while (isdigit((unsigned char)peek(&lexer))) {
+        lexer.cursor_position += 1;
+      }
+      Token number_token = tokenize_number(&lexer, starting_offset_position);
+      tkn_list_add(lexer.lex_tkn_list_struct, number_token);
+    }
 
-    } else {
+    else {
       Token punctuation_token;
       bool made_punct = false;
       switch (peek(&lexer)) {

@@ -438,6 +438,46 @@ static void seti_still_ident(void) {
   token_list_free(l);
 }
 
+/* [Part 5] "42" is TOKEN_NUMBER spanning 2 chars. */
+static void number_42_is_number_then_eof(void) {
+  TokenList *l = tokenize_with("42");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_NUMBER, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  token_list_free(l);
+}
+
+/* [Part 5] "id=42;" -> IDENT, EQ, NUMBER, SEMI, EOF (5 tokens, all positions). */
+static void id_eq_42_semi_is_ident_eq_number_semi_eof(void) {
+  TokenList *l = tokenize_with("id=42;");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(5, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EQ, l->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(2, l->token_list_buffer[1].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].word_length);
+
+  ASSERT_EQ_INT(TOKEN_NUMBER, l->token_list_buffer[2].token_type);
+  ASSERT_EQ_INT(3, l->token_list_buffer[2].offset_position);
+  ASSERT_EQ_INT(2, l->token_list_buffer[2].word_length);
+
+  ASSERT_EQ_INT(TOKEN_SEMICOLON, l->token_list_buffer[3].token_type);
+  ASSERT_EQ_INT(5, l->token_list_buffer[3].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[3].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[4].token_type);
+  token_list_free(l);
+}
+
 void suite_tokenizer(void) {
   SUITE("tokenizer");
   RUN_TEST(empty_input_is_single_eof);
@@ -470,6 +510,10 @@ void suite_tokenizer(void) {
   RUN_TEST(lt_single_still_lt);
   RUN_TEST(ident_lt_ident);
   RUN_TEST(ident_lte_ident);
+
+  /* Part 5 - numbers */
+  RUN_TEST(number_42_is_number_then_eof);
+  RUN_TEST(id_eq_42_semi_is_ident_eq_number_semi_eof);
 
   /* Part 4 - identifier spelling */
   RUN_TEST(user_id2_is_ident_len8);
