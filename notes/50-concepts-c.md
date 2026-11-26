@@ -151,6 +151,21 @@ things that actually came up while building the lexer.
 - **`stdbuf` conflicts with ASan's `LD_PRELOAD`** ("ASan runtime does not come first in initial
   library list"). Use `script`, not `stdbuf`.
 
+## Two quote layers — C source vs SQL input
+
+These are independent and easy to conflate:
+
+| Place | Written | Means |
+|---|---|---|
+| C `char` literal | `'\''` | the single byte `0x27` (apostrophe) — the backslash is only C escaping |
+| C `char` literal | `'"'` | the single byte `0x22` (quotation mark) |
+| C string literal | `"'hello'"` | seven bytes: `' h e l l o '` — outer `"` are C delimiters, inner `'` are payload |
+| MiniDB SQL input | `'hello'` | one STRING token; the grammar's delimiter is `0x27` |
+
+MiniDB's syntax uses **single quotes** because the guide's tests do. `'"'` in the scanner would
+mean the SQL grammar uses double quotes, which this chapter does not define. `'\''` is not a
+two-character match — it is C's way of expressing the one byte the scanner needs.
+
 ## Docs worth keeping
 
 - Crafting Interpreters, Ch. 16 "Scanning on Demand" —
