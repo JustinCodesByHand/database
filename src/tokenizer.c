@@ -77,7 +77,6 @@ static bool tkn_list_add(TokenList *tkn_list_struct, Token newToken) {
   }
 
   if (!tkn_list_struct->had_error) {
-    // TODO: assign error_msg paramaters
     tkn_list_struct->total_num_tkns += 1;
     addToStruct(tkn_list_struct, newToken);
     return true;
@@ -186,6 +185,16 @@ static void error_reporting(Lexer *lexer, size_t starting_offset_position) {
       lexer->lex_tkn_list_struct->error_pos);
 }
 
+static Token tokenize_string(Lexer *lexer, size_t starting_offset_position) {
+  bool closing_quote = false;
+  while (!closing_quote) {
+    if (peek(&lexer) == '\'') {
+      closing_quote = true;
+    } else {
+    }
+  }
+}
+
 /*
  * Tokenizes `source`. The returned list points INTO `source`,
  * which must outlive the list.
@@ -229,7 +238,7 @@ TokenList *tokenize(const char *input_string) {
       break;
     }
 
-    // get the location of the loaction of the current character in the token
+    // index of the current byte in the token
     size_t starting_offset_position = lexer.cursor_position;
 
     // query the char to see if it's a letter
@@ -245,15 +254,17 @@ TokenList *tokenize(const char *input_string) {
       // assign fields after reading entire word
       Token word_tkn = tokenize_word(&lexer, starting_offset_position);
       tkn_list_add(lexer.lex_tkn_list_struct, word_tkn);
+
     } else if (isdigit((unsigned char)peek(&lexer))) {
       while (isdigit((unsigned char)peek(&lexer))) {
         lexer.cursor_position += 1;
       }
       Token number_token = tokenize_number(&lexer, starting_offset_position);
       tkn_list_add(lexer.lex_tkn_list_struct, number_token);
-    }
 
-    else {
+    } else if ((unsigned char)peek(&lexer) == '\'') {
+      Token string_token = tokenize_string(&lexer, starting_offset_position);
+    } else {
       Token punctuation_token;
       bool made_punct = false;
       switch (peek(&lexer)) {
