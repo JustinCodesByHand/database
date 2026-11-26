@@ -56,10 +56,10 @@ static char *trim(char *input_string_buffer) {
   for (int index = line_length - 1; 0 <= index; index--) {
     if (isspace(input_string_buffer[index])) {
       continue;
+    } else {
+      input_string_buffer[index + 1] = '\0';
+      break;
     }
-
-    input_string_buffer[index + 1] = '\0';
-    break;
   }
   return new_start_ptr;
 }

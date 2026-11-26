@@ -56,6 +56,10 @@ SAN   := -fsanitize=address,undefined -fno-omit-frame-pointer
 | `make clean` | remove `build/`, `*.db`, `*.wal` |
 | `make fmt` | `clang-format -i` every `.c`/`.h` under `src/` and `tests/` (style pinned by `.clang-format`: LLVM, 2 spaces, 80 columns) |
 
+> **Keep explicit `else` branches.** The learner wants them, including after `return` /
+> `continue`. Do **not** run `clang-tidy --fix` with `readability-else-after-return` enabled —
+> it deletes those branches. `make fmt` (clang-format only) preserves them.
+
 > **The trap that bites every debugger setup:** `make test` builds **and runs**. To rebuild
 > without running (e.g. from a debugger's `preLaunchTask`) use the *file* target
 > `make build/tests`. Otherwise the program runs once during the build and again under the

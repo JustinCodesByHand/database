@@ -640,3 +640,9 @@ readable. Verified: `clang-format --dry-run -Werror` clean, focused clang-tidy c
 the three intentional `_POSIX_C_SOURCE` feature-test macros, strict build clean, **38 tests,
 5 failed** — same five red Part 6 tests, same ASan leak (each failing test returns from
 `ASSERT` before `token_list_free`). No behavior changed.
+
+**Learner preference — keep explicit `else` branches.** Told to "keep the elses" after seeing
+clang-tidy had removed them. Restored `else` in `is_at_end`, `tkn_list_add`, the `<`/`>`/`!`
+lookahead branches, and `trim` in `repl.c`. `readability-else-after-return` is therefore
+disabled by preference for this repo: do not re-run that check with `--fix`. Verified:
+clang-format clean, strict build clean, **38 tests, 5 failed** — unchanged.

@@ -23,9 +23,10 @@ static bool is_at_end(const Lexer *lexer) {
   unsigned char nul_term = peek(lexer);
   if (nul_term == '\0') {
     return true;
+  } else {
+    // program continues
+    return false;
   }
-  // program continues
-  return false;
 }
 
 // init OR grow the list capasity
@@ -80,13 +81,14 @@ static bool tkn_list_add(TokenList *tkn_list_struct, Token newToken) {
     tkn_list_struct->total_num_tkns += 1;
     addToStruct(tkn_list_struct, newToken);
     return true;
+  } else {
+    newToken.token_type = token_error;
+    tkn_list_struct->had_error = true;
+    tkn_list_struct->error_pos = newToken.offset_position;
+    tkn_list_struct->error_msg =
+        "grow_list_capisity threw an error, it uses malloc and realloc";
+    return false;
   }
-  newToken.token_type = token_error;
-  tkn_list_struct->had_error = true;
-  tkn_list_struct->error_pos = newToken.offset_position;
-  tkn_list_struct->error_msg =
-      "grow_list_capisity threw an error, it uses malloc and realloc";
-  return false;
 }
 
 // Tokenlist Helper
@@ -301,12 +303,13 @@ TokenList *tokenize(const char *input_string) {
           lexer.cursor_position += 2;
           made_punct = true;
           break;
+        } else {
+          punctuation_token =
+              tokenize_punctuation(&lexer, starting_offset_position);
+          lexer.cursor_position += 1;
+          made_punct = true;
+          break;
         }
-        punctuation_token =
-            tokenize_punctuation(&lexer, starting_offset_position);
-        lexer.cursor_position += 1;
-        made_punct = true;
-        break;
 
       case '>':
         if (lexer.input_string[lexer.cursor_position + 1] == '=') {
@@ -319,12 +322,13 @@ TokenList *tokenize(const char *input_string) {
           lexer.cursor_position += 2;
           made_punct = true;
           break;
+        } else {
+          punctuation_token =
+              tokenize_punctuation(&lexer, starting_offset_position);
+          lexer.cursor_position += 1;
+          made_punct = true;
+          break;
         }
-        punctuation_token =
-            tokenize_punctuation(&lexer, starting_offset_position);
-        lexer.cursor_position += 1;
-        made_punct = true;
-        break;
 
       case '!':
         /* TODO: 2-byte case — lookahead for != (consume 2); ! alone has no
@@ -339,9 +343,10 @@ TokenList *tokenize(const char *input_string) {
           lexer.cursor_position += 2;
           made_punct = true;
           break;
+        } else {
+          lexer.cursor_position += 1;
+          break;
         }
-        lexer.cursor_position += 1;
-        break;
 
       default:
         lexer.cursor_position += 1;
