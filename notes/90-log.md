@@ -651,6 +651,15 @@ labels are internal-sounding. Ran scratch on `"SELECT@"`: output `error_msg: pun
 invaliderrorrrr`, NULL return, leak — confirms step 3's EOF guard / `errorrrr` removal is the
 next required edit. Step 2 code is uncommitted.
 
+**Test review (same session):** learner asked what he did wrong in the tests. Nothing is wrong
+with them — the five Part 6 tests are the intended red checkpoint. The failure point moved:
+before step 2 `'` was silently skipped by `default:`, so the tests reached token assertions;
+now `error_reporting` fires on `'`, the `errorrrr`/NULL tail returns NULL, and every test stops
+at `ASSERT_NOT_NULL`. That is step 3's target, not a test defect. One genuine gap confirmed:
+`unterminated_string_reports_opening_quote` still lacks the count assertion (`total_num_tkns
+== 0`) required by `current.md`. Helper on disk now takes only the position and prints
+`Unexpected character '%c' at position %zu` — the byte-extraction advice landed.
+
 **Learner preference — keep explicit `else` branches.** Told to "keep the elses" after seeing
 clang-tidy had removed them. Restored `else` in `is_at_end`, `tkn_list_add`, the `<`/`>`/`!`
 lookahead branches, and `trim` in `repl.c`. `readability-else-after-return` is therefore
