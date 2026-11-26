@@ -374,10 +374,14 @@ TokenList *tokenize(const char *input_string) {
       }
     }
   }
-  // EOF is a success-only token — an error list stops at the last valid token
-  if (!lexers_tkn_list->had_error) {
-    Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
-    tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
+  // if we read '\0', then make EOF token and exit (we always are at end here)
+  Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
+  bool add_to_list = tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
+
+  if (!add_to_list && lexer.lex_tkn_list_struct->had_error) {
+    lexer.lex_tkn_list_struct->had_error = false;
+    fprintf(stderr, "%s", "errorrrr");
+    return NULL;
   }
 
   return lexers_tkn_list;
