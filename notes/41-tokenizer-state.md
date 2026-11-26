@@ -161,7 +161,10 @@ position source are correct. Two gaps: (1) the printed line is `fprintf(stderr, 
 %s", error_msg)` — it omits both the byte and its position, so the console does not honor the
 setted "print at detection site" decision (`unexpected character '%c' at position %zu`);
 (2) the labels passed ("2nd char in; 2 char punctuation", "punctuation tkn invalid") are
-internal descriptions, not user-facing messages. Scratch `"SELECT@"` confirms step 3 is still
+internal descriptions, not user-facing messages. To name the byte, index the saved offset —
+`lexer->input_string[starting_offset_position]` — not a cursor that may later be advanced;
+`char` promotes to `int` for `%c`, so cast to `(unsigned char)` for bytes >= 128. Scratch
+`"SELECT@"` confirms step 3 is still
 needed: the EOF push reaches `tkn_list_add`'s else branch, which overwrites `error_pos` /
 `error_msg`, then the `errorrrr` tail clears `had_error` and returns NULL (leak).
 
