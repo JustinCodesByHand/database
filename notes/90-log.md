@@ -564,3 +564,23 @@ Chapter 2 (parts 1-10: punctuation → 1-char ops → 2-char ops → identifier 
 robustness/stress → token_type_name → the full-statement checkpoint), each part = Context /
 Questions (the implementation is the learner's) / test-first checkpoint, with the span
 invariant as the header and the per-part hint bank in tokenizer.md as the escape hatch.
+
+## Session 2026-11-26 — current.md Parts 6-10 expanded; Parts 1-5 confirmed green
+
+Learner asked to expand `current.md` Parts 6-10 with everything needed. Re-read the guide's
+Chapter 2 skeleton/test list/Done-when (lines 2468-2665), `tokenizer.h`, `tokenizer.c`,
+`tests/scratch.c`, and notes 40/41/60 before writing. Replaced the five short part cards with
+detailed ones: a dispatch mermaid showing where each part plugs in; Part 6 (three positions,
+`word_length = close - open - 2`, the `size_t` underflow trap, no escapes, `ASSERT_EQ_MEM`
+not `ASSERT_EQ_STR` for spans, exact expected spans for five inputs); Part 7 (partial-list vs
+`NULL` contract table, `error_msg` storage problem, sticky-`had_error` trap, exact error
+positions); Part 8 (EOF pointer-at-end convention, realloc/growth call sites, four robustness
+tests incl. 10,001-token stress); Part 9 (names choice, `-Wswitch` vs `default`, recovery from
+`scratch_type_name`); Part 10 (all ten exact token spans for the full statement, the six-token
+grammar-free case, the guide's Done-when).
+
+Verified disk before writing the banner: the earlier red Part 5 state had been fixed and
+committed by the learner (`1adf1fb`) — **33 tests, 0 failed**. Corrected the top banner and
+Part 5 card to match (initially drafted them from the stale checkpoint, then re-ran
+`build/tests` and fixed). Updated `todo` to mark Parts 1-5 done and restate Parts 6-10 as the
+active queue. No tokenizer code changed in this session.
