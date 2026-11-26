@@ -39,8 +39,9 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **33 t
       unterminated reports the opening quote's position. The fifth test encodes the
       partial-list + `had_error` error contract — revisit when Part 7's decision is made.
       `current.md` Part 6 has the exact spans and test table.
-- [ ] **Part 7 — errors:** decide partial-list vs `NULL` contract BEFORE tests; `SELECT@` →
-      `error_pos 6`. Resolves the sticky-`had_error` trap.
+- [ ] **Part 7 — errors:** contract DECIDED 2026-11-26 — partial list + `had_error` +
+      `error_pos` (not `NULL`), so the caller knows where the error is. Implement that
+      contract; `SELECT@` → `error_pos 6`. Resolves the sticky-`had_error` trap.
 - [ ] **Part 8 — EOF/list robustness:** EOF pointer at end, `token_list_free(NULL)`, 10,000-token
       stress under ASan.
 - [ ] **Part 9 — `token_type_name`** (see bug above; recover from `tests/scratch.c`).
@@ -53,8 +54,10 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **33 t
 
 ## Open design decisions (decide before the parser grows)
 
-- [ ] **OOM reporting:** should `tokenize` return `NULL`, or the list with `had_error = true`?
-      If `NULL`, the caller has no list to read `had_error` from.
+- [x] **OOM/error reporting — DECIDED 2026-11-26:** return the partial list with
+      `had_error = true`, `error_pos` at the bad byte, `error_msg` set; caller frees. One
+      contract for lexical errors and allocation failure. The existing `errorrrr`/`return
+      NULL` tail must be rewritten.
 - [ ] **`token_type_name` spelling:** enum names (`"STAR"`, `"LTE"`) vs user-facing SQL symbols
       (`"*"`, `"<="`). The guide derives `expect()` messages from it, so decide now.
 - [ ] **EOF token field convention** (see bug above).

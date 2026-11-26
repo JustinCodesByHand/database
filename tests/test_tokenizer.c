@@ -554,9 +554,9 @@ static void quoted_string_does_not_swallow_following_ident(void) {
 }
 
 /* [Part 6/7 boundary] The guide wants the OPENING quote's position on an
- * unterminated string. This test assumes the "partial list + had_error"
- * contract described in current.md Part 7; if you choose return-NULL instead,
- * this is the one test to rewrite when that decision is made. */
+ * unterminated string. Contract decided 2026-11-26: tokenize returns the
+ * partial list with had_error = true and error_pos at the offending byte;
+ * the caller frees it normally. No NULL return on a lexical error. */
 static void unterminated_string_reports_opening_quote(void) {
   TokenList *l = tokenize_with("'abc");
   ASSERT_NOT_NULL(l);

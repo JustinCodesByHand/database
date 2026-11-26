@@ -598,3 +598,13 @@ unterminated `'abc` → `had_error` + `error_pos 0`. Used `ASSERT_EQ_MEM` for to
 `hello` is scanned as IDENT with the *correct* span, so the implementation mostly needs to
 reclassify and gate on the closing quote. The unterminated test deliberately pins the
 partial-list error contract; it is the one to rewrite if the learner picks return-NULL.
+
+### Error contract decision (same session)
+
+Asked which error contract he wanted. Answer: partial list, *"so I know where the error
+exists."* Recorded as settled in `current.md` Part 7, `notes/41`, `notes/60`, and `todo`;
+updated the test comment to match (it no longer hedges about return-NULL). Consequence taught:
+the partial-list choice makes `error_pos` the primary artifact, but `tkn_list_add` gates on
+the sticky `had_error`, so recording an error mid-loop will refuse the EOF push unless the
+scanner stops at the first error or the gate is separated from the general flag. One contract
+now covers OOM too — the existing `errorrrr`/`return NULL` tail is obsolete.

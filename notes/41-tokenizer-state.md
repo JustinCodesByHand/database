@@ -129,4 +129,17 @@ empty string, trailing bytes after the close, unterminated string error. **38 te
 failed; the previous 33 stay green.** Scratch proof: `make scratch ARG="\"'hello'\""`
 currently yields `IDENT pos=1 len=5` — the two skipped quotes are handled by `default:`,
 so the span is already right and only the token type is wrong. The unterminated test assumes
-the partial-list + `had_error` contract (Part 7 decision still open).
+the partial-list + `had_error` contract — decision now confirmed below.
+
+## Error contract — DECIDED 2026-11-26
+
+Learner chose **(a) partial list**: on any error (lexical or OOM) `tokenize` returns the list
+with `had_error = true`, `error_pos` at the offending byte, `error_msg` set; the caller frees
+normally. Stated reason: *"so I know where the error exists"* — a `NULL` return destroys the
+position. The `errorrrr` / `return NULL` tail of `tokenize` is obsolete and must be rewritten.
+
+**Immediate consequence:** `tkn_list_add` refuses every push once `had_error` is true. Setting
+the flag mid-loop therefore kills the final EOF push (and any later token pushes). The
+implementation must either stop at the first error and skip the EOF push, or separate the
+allocation-failure gate from the general error flag. `error_msg` is a `const char *` with no
+buffer field — a local `char buf[]` would dangle.

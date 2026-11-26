@@ -235,7 +235,7 @@ consequence of the chosen scan loop, not a grammar decision. Ask before extendin
 | `"'a b'"` | STRING(pos 1, len 3, text `a b`), EOF(pos 5) |
 | `"''"` | STRING(pos 1, len 0), EOF(pos 2) |
 | `"'hi'x"` | STRING(pos 1, len 2), IDENT(pos 4, len 1), EOF(pos 5) — proves the quote does not swallow what follows |
-| `"'abc"` (unterminated) | needs Part 7's contract: assert `had_error` true and `error_pos == 0` (opening quote). If you defer it, say so in the commit and write it immediately after Part 7. |
+| `"'abc"` (unterminated) | already written and red: `had_error` true and `error_pos == 0` (opening quote). The chosen contract now matches it. |
 
 **Do not use `ASSERT_EQ_STR` on a token span** — `input_string` is not NUL-terminated at
 `word_length`; it reads into the rest of the source (the old span bug). Use
@@ -255,18 +255,20 @@ that drops bytes today. On disk: `TokenList` fields `had_error` / `error_msg` / 
 are initialized to `false` / `"no error\n"` / `0` in `tokenize`; `tokentype` has `token_error`
 (lowercase). **This part starts with a decision, not code.**
 
-**The error contract — answer before writing a test:**
+**The error contract — DECIDED 2026-11-26 by the learner: (a) partial list.** On any error,
+`tokenize` returns the list with `had_error = true`, `error_pos` at the offending byte, and
+`error_msg` set; the caller frees it normally. The reason he gave: *"so I know where the
+error exists"* — the position is the useful artifact, and a `NULL` return destroys it.
 
 | Choice | Observable behavior | Consequence |
 |---|---|---|
-| (a) partial list | return the list with `had_error = true`, `error_pos` at the bad byte, `error_msg` set; caller frees normally | the REPL can later print `near character '@' at position 6` |
-| (b) NULL | free internally, return `NULL` | caller has no list to read `error_pos` from — where does the message come from? |
+| **(a) partial list — CHOSEN** | list returned, `had_error = true`, `error_pos` at the bad byte, `error_msg` set; caller frees normally | the REPL can later print `near character '@' at position 6` |
+| (b) NULL | free internally, return `NULL` | caller has no list to read `error_pos` from — rejected |
 
-Which one matches the current OOM path? Look at the tail of `tokenize`: `if (!add_to_list &&
-had_error) { had_error = false; fprintf(stderr, "errorrrr"); return NULL; }` — that is (b),
-half-done: it leaks the list and buffer and erases the flag. Decide **one** contract for
-*both* error kinds (malformed input and allocation failure) and write it in a comment / the
-commit message.
+This applies to **both** error kinds: malformed input and allocation failure. The existing
+OOM tail — `if (!add_to_list && had_error) { had_error = false; fprintf(stderr,
+"errorrrr"); return NULL; }` — is the rejected (b) behavior, half-done: it leaks the list
+and buffer and erases the flag. It must be rewritten to return the partial list instead.
 
 **The `error_msg` storage problem:** `error_msg` is a `const char *` with no string buffer
 field. Options: (1) point it at a string literal (e.g. `"unexpected character"`) and let the
@@ -293,7 +295,7 @@ tests.
 
 | Input | Assertion |
 |---|---|
-| `"SELECT@"` | agreed contract; `had_error` true, `error_pos == 6`; if (a), list non-NULL and freeable |
+| `"SELECT@"` | list non-NULL and freeable; `had_error` true, `error_pos == 6` |
 | `"@SELECT"` | error at 0 — position is the offending byte, not the end |
 | `"SELECT 42 @ ;"` | error at 10, after valid tokens — earlier tokens were handled |
 | `"'abc"` | the Part 6 unterminated case, now using this contract |
