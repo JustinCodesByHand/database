@@ -478,6 +478,93 @@ static void id_eq_42_semi_is_ident_eq_number_semi_eof(void) {
   token_list_free(l);
 }
 
+/* [Part 6] "'hello'" -> one STRING whose span excludes both quotes. */
+static void quoted_hello_is_string_with_quotes_excluded(void) {
+  const char *input = "'hello'";
+  TokenList *l = tokenize_with(input);
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_STRING, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(5, l->token_list_buffer[0].word_length);
+  ASSERT(l->token_list_buffer[0].input_string == input + 1);
+  ASSERT_EQ_MEM("hello", l->token_list_buffer[0].input_string,
+                l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(7, l->token_list_buffer[1].offset_position);
+  token_list_free(l);
+}
+
+/* [Part 6] Interior whitespace is content, not a token separator. */
+static void quoted_space_keeps_interior_whitespace(void) {
+  const char *input = "'a b'";
+  TokenList *l = tokenize_with(input);
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_STRING, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(3, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_MEM("a b", l->token_list_buffer[0].input_string,
+                l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(5, l->token_list_buffer[1].offset_position);
+  token_list_free(l);
+}
+
+/* [Part 6] "''" is a zero-length STRING at position 1, not the end of input. */
+static void empty_quoted_string_is_zero_length(void) {
+  const char *input = "''";
+  TokenList *l = tokenize_with(input);
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_STRING, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].word_length);
+  ASSERT(l->token_list_buffer[0].input_string == input + 1);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(2, l->token_list_buffer[1].offset_position);
+  token_list_free(l);
+}
+
+/* [Part 6] The quote ends at its closing quote; following bytes start fresh. */
+static void quoted_string_does_not_swallow_following_ident(void) {
+  TokenList *l = tokenize_with("'hi'x");
+  ASSERT_NOT_NULL(l);
+  ASSERT_EQ_INT(3, l->total_num_tkns);
+
+  ASSERT_EQ_INT(TOKEN_STRING, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].offset_position);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_MEM("hi", l->token_list_buffer[0].input_string,
+                l->token_list_buffer[0].word_length);
+
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(4, l->token_list_buffer[1].offset_position);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].word_length);
+
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[2].token_type);
+  ASSERT_EQ_INT(5, l->token_list_buffer[2].offset_position);
+  token_list_free(l);
+}
+
+/* [Part 6/7 boundary] The guide wants the OPENING quote's position on an
+ * unterminated string. This test assumes the "partial list + had_error"
+ * contract described in current.md Part 7; if you choose return-NULL instead,
+ * this is the one test to rewrite when that decision is made. */
+static void unterminated_string_reports_opening_quote(void) {
+  TokenList *l = tokenize_with("'abc");
+  ASSERT_NOT_NULL(l);
+  ASSERT(l->had_error);
+  ASSERT_EQ_INT(0, l->error_pos);
+  token_list_free(l);
+}
+
 void suite_tokenizer(void) {
   SUITE("tokenizer");
   RUN_TEST(empty_input_is_single_eof);
@@ -520,4 +607,11 @@ void suite_tokenizer(void) {
   RUN_TEST(users_still_ident_len5);
   RUN_TEST(set_still_set);
   RUN_TEST(seti_still_ident);
+
+  /* Part 6 - quoted strings */
+  RUN_TEST(quoted_hello_is_string_with_quotes_excluded);
+  RUN_TEST(quoted_space_keeps_interior_whitespace);
+  RUN_TEST(empty_quoted_string_is_zero_length);
+  RUN_TEST(quoted_string_does_not_swallow_following_ident);
+  RUN_TEST(unterminated_string_reports_opening_quote);
 }

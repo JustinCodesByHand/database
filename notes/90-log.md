@@ -584,3 +584,17 @@ committed by the learner (`1adf1fb`) — **33 tests, 0 failed**. Corrected the t
 Part 5 card to match (initially drafted them from the stale checkpoint, then re-ran
 `build/tests` and fixed). Updated `todo` to mark Parts 1-5 done and restate Parts 6-10 as the
 active queue. No tokenizer code changed in this session.
+
+### Continued — Part 6 tests written (test-first)
+
+Learner asked for the Part 6 tests. Added five to `tests/test_tokenizer.c`, registered in
+`suite_tokenizer` under a `/* Part 6 - quoted strings */` block: quote-excluded span
+(`'hello'` → STRING pos 1 len 5, EOF pos 7), interior whitespace (`'a b'` → len 3), empty
+string (`''` → pos 1 len 0), no swallowing of trailing bytes (`'hi'x` → STRING + IDENT), and
+unterminated `'abc` → `had_error` + `error_pos 0`. Used `ASSERT_EQ_MEM` for token text
+(spans are not NUL-terminated) and a pointer-identity `ASSERT` for `input_string == input +
+1`. Result: **38 tests, 5 failed** — all five red, prior 33 green. Scratch harness on
+`'hello'` shows why: today the quotes are silently consumed by the `default:` branch and
+`hello` is scanned as IDENT with the *correct* span, so the implementation mostly needs to
+reclassify and gate on the closing quote. The unterminated test deliberately pins the
+partial-list error contract; it is the one to rewrite if the learner picks return-NULL.

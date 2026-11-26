@@ -112,3 +112,21 @@ Set a breakpoint at `tokenize_punctuation` entry. Watch `starting_index`,
 `lexer->cursor_position`, and what `strncasecmp`'s first argument points at. Compare with
 `new_punctuation_token.input_string`. The mismatch between those two pointers is where the
 bug lives.
+
+## Current verified state (2026-11-26)
+
+Parts 1-5 are committed and green: **33 tests, 0 failed** before Part 6 tests were added.
+Punctuation/operators use a giant `switch` in `tokenize` with a local `made_punct` push gate
+(not `had_error`); two-char operators use direct lookahead at `cursor_position + 1`.
+Identifiers accept `isalpha || isdigit || '_'` after byte 1. Numbers have an
+`else if (isdigit(...))` branch before the switch and `tokenize_number` returns
+`TOKEN_NUMBER`.
+
+## Part 6 tests (added 2026-11-26, all red)
+
+Five tests in `tests/test_tokenizer.c`: quote-excluded string span, interior whitespace,
+empty string, trailing bytes after the close, unterminated string error. **38 tests, 5
+failed; the previous 33 stay green.** Scratch proof: `make scratch ARG="\"'hello'\""`
+currently yields `IDENT pos=1 len=5` — the two skipped quotes are handled by `default:`,
+so the span is already right and only the token type is wrong. The unterminated test assumes
+the partial-list + `had_error` contract (Part 7 decision still open).

@@ -34,8 +34,11 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **33 t
       punctuation and operators (giant `switch`, 2-char lookahead for `<= >= !=`), identifier
       spelling (`isalpha || isdigit || '_'` after byte 1), numbers (`else if (isdigit)`,
       `tokenize_number` → `TOKEN_NUMBER`). Commits `bbd234a`, `fb348ee`, `af7c1c6`, `1adf1fb`.
-- [ ] **Part 6 — strings:** `TOKEN_STRING`, quotes excluded from the span, unterminated reports
-      the opening quote's position. `current.md` Part 6 has the exact spans and test table.
+- [ ] **Part 6 — strings:** five tests written and registered 2026-11-26 (all **red**; 38 tests
+      registered, 5 failed). Need `TOKEN_STRING` with quotes excluded from the span;
+      unterminated reports the opening quote's position. The fifth test encodes the
+      partial-list + `had_error` error contract — revisit when Part 7's decision is made.
+      `current.md` Part 6 has the exact spans and test table.
 - [ ] **Part 7 — errors:** decide partial-list vs `NULL` contract BEFORE tests; `SELECT@` →
       `error_pos 6`. Resolves the sticky-`had_error` trap.
 - [ ] **Part 8 — EOF/list robustness:** EOF pointer at end, `token_list_free(NULL)`, 10,000-token
