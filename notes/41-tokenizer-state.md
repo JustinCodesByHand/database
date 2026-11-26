@@ -153,3 +153,11 @@ therefore a success-only token — the parser must check `had_error` before rely
 Stopping immediately also dissolves the sticky-`had_error` push gate: no push follows the
 error. Tests must assert counts (e.g. `SELECT@` → 1 token, `@SELECT` → 0, unterminated string
 → 0).
+
+**Where `error_pos` comes from:** the main loop captures `starting_offset_position =
+lexer.cursor_position` before dispatch (`tokenizer.c:218`). In the `default:` and lone-`!`
+branches that value *is* the offending byte's index, provided the helper is called **before**
+any `cursor_position += 1` for that byte. The unterminated-string case also passes the
+branch's `starting_offset_position` (the opening quote), not the cursor after scanning. So
+the reporting helper takes a `size_t position` argument and the caller supplies the captured
+offset; the helper does not consume characters.
