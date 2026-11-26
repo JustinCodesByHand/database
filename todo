@@ -65,8 +65,9 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **33 t
 
 ## Cleanup (non-blocking)
 
-- [ ] Remove the leftover `aaaaa` in `tokenizer.c` (the `tokenize` doc comment, ~line 122).
-- [ ] Rename `__EXIT` / `__CONTINUE` / `__CANTPARSE` (leading `__` is reserved).
+- [x] Remove the leftover `aaaaa` in `tokenizer.c` — done 2026-11-26 during formatting pass.
+- [x] Rename `__EXIT` / `__CONTINUE` / `__CANTPARSE` → `REPL_EXIT` / `REPL_CONTINUE` /
+      `REPL_CANTPARSE` (leading `__` is reserved) — done 2026-11-26.
 - [ ] `list_push`: `return false` on OOM rather than `assert`; single growth path.
 - [ ] Delete branch `rescue-a1ce250` once you are confident nothing else is needed.
 - [ ] Drop the stale stash `stash@{0}` (the superseded `tokenizer.h` comment deletion).

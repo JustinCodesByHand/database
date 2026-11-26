@@ -54,6 +54,7 @@ SAN   := -fsanitize=address,undefined -fno-omit-frame-pointer
 | `make scratch [ARG='...']` | build **and run** the scratch harness (5s timeout) |
 | `make run` | run `build/minidb mini.db` |
 | `make clean` | remove `build/`, `*.db`, `*.wal` |
+| `make fmt` | `clang-format -i` every `.c`/`.h` under `src/` and `tests/` (style pinned by `.clang-format`: LLVM, 2 spaces, 80 columns) |
 
 > **The trap that bites every debugger setup:** `make test` builds **and runs**. To rebuild
 > without running (e.g. from a debugger's `preLaunchTask`) use the *file* target

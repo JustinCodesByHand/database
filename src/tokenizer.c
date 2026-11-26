@@ -23,10 +23,9 @@ static bool is_at_end(const Lexer *lexer) {
   unsigned char nul_term = peek(lexer);
   if (nul_term == '\0') {
     return true;
-  } else {
-    // program continues
-    return false;
   }
+  // program continues
+  return false;
 }
 
 // init OR grow the list capasity
@@ -76,19 +75,18 @@ static bool tkn_list_add(TokenList *tkn_list_struct, Token newToken) {
     grow_list_capisity(tkn_list_struct);
   }
 
-  if (tkn_list_struct->had_error != true) {
+  if (!tkn_list_struct->had_error) {
     // TODO: assign error_msg paramaters
     tkn_list_struct->total_num_tkns += 1;
     addToStruct(tkn_list_struct, newToken);
     return true;
-  } else {
-    newToken.token_type = token_error;
-    tkn_list_struct->had_error = true;
-    tkn_list_struct->error_pos = newToken.offset_position;
-    tkn_list_struct->error_msg =
-        "grow_list_capisity threw an error, it uses malloc and realloc";
-    return false;
   }
+  newToken.token_type = token_error;
+  tkn_list_struct->had_error = true;
+  tkn_list_struct->error_pos = newToken.offset_position;
+  tkn_list_struct->error_msg =
+      "grow_list_capisity threw an error, it uses malloc and realloc";
+  return false;
 }
 
 // Tokenlist Helper
@@ -109,7 +107,8 @@ static const keyword KEYWORDS[] = {
     {"select", TOKEN_SELECT}, {"from", TOKEN_FROM},   {"where", TOKEN_WHERE},
     {"insert", TOKEN_INSERT}, {"into", TOKEN_INTO},   {"values", TOKEN_VALUES},
     {"create", TOKEN_CREATE}, {"table", TOKEN_TABLE}, {"delete", TOKEN_DELETE},
-    {"update", TOKEN_UPDATE}, {"set", TOKEN_SET}};
+    {"update", TOKEN_UPDATE}, {"set", TOKEN_SET},
+};
 
 // Lexer Helper:
 // creates and returns a new token that starts isalpha()
@@ -151,18 +150,22 @@ static const punctuation PUNCTUATIONS[] = {
     {"*", TOKEN_STAR},      {":", TOKEN_SEMICOLON}, {",", TOKEN_COMMA},
     {";", TOKEN_SEMICOLON}, {"(", TOKEN_LPAREN},    {")", TOKEN_RPAREN},
     {"=", TOKEN_EQ},        {"!=", TOKEN_NEQ},      {"<", TOKEN_LT},
-    {"<=", TOKEN_LTE},      {">", TOKEN_GT},        {">=", TOKEN_GTE}};
+    {"<=", TOKEN_LTE},      {">", TOKEN_GT},        {">=", TOKEN_GTE},
+};
 
 // us same pattern as tokenize word
 static Token tokenize_punctuation(Lexer *lexer, size_t starting_index) {
 
   Token new_punctuation_token = (Token){
-      TOKEN_IDENT, lexer->input_string + starting_index, 1, starting_index};
+      TOKEN_IDENT,
+      lexer->input_string + starting_index,
+      1,
+      starting_index,
+  };
 
-  for (size_t i = 0; i < (sizeof(PUNCTUATIONS) / sizeof(PUNCTUATIONS)[0]);
-       i++) {
-    if ((strncasecmp(new_punctuation_token.input_string, PUNCTUATIONS[i].symbol,
-                     new_punctuation_token.word_length)) == 0) {
+  for (size_t i = 0; i < (sizeof(PUNCTUATIONS) / sizeof PUNCTUATIONS[0]); i++) {
+    if (strncasecmp(new_punctuation_token.input_string, PUNCTUATIONS[i].symbol,
+                    new_punctuation_token.word_length) == 0) {
       new_punctuation_token.token_type = PUNCTUATIONS[i].punct_type;
       return new_punctuation_token;
     }
@@ -173,7 +176,7 @@ static Token tokenize_punctuation(Lexer *lexer, size_t starting_index) {
 
 /*
  * Tokenizes `source`. The returned list points INTO `source`,
- * which must outlive the list. aaaaa
+ * which must outlive the list.
  * CALLER OWNS the result — call token_list_free().
  */
 TokenList *tokenize(const char *input_string) {
@@ -201,14 +204,14 @@ TokenList *tokenize(const char *input_string) {
   // which is inside the higher level token_list_buffer
 
   // while we have not encountered '\0'
-  while (!is_at_end(&lexer)) {
+  while (!is_at_end(&lexer) && !lexers_tkn_list->had_error) {
 
     // consume whitespaces and increment the current cursor position
     while (isspace((unsigned char)peek(&lexer))) {
       lexer.cursor_position += 1;
     }
 
-    // trailinr whitespace: nothing is left but the EOF marker
+    // trailing whitespace: nothing is left but the EOF marker
     // r
     if (is_at_end(&lexer)) {
       break;
@@ -217,17 +220,17 @@ TokenList *tokenize(const char *input_string) {
     // everything that is not whitespace starts a token here
     size_t starting_offset_position = lexer.cursor_position;
 
-    // querey the char to see if its a letter
+    // query the char to see if it's a letter
     if (isalpha((unsigned char)peek(&lexer))) {
 
-      // continue reading word while scanning contunious letters
+      // continue reading word while scanning continuous letters
       while (isalpha((unsigned char)peek(&lexer)) ||
              isdigit((unsigned char)peek(&lexer)) || peek(&lexer) == '_') {
         // increment the count until we encounter a non-letter
         lexer.cursor_position += 1;
       }
 
-      // assign feilds after reading entire word
+      // assign fields after reading entire word
       Token word_tkn = tokenize_word(&lexer, starting_offset_position);
       tkn_list_add(lexer.lex_tkn_list_struct, word_tkn);
     }
@@ -289,49 +292,57 @@ TokenList *tokenize(const char *input_string) {
       case '<':
         /* TODO: 2-byte case — lookahead for <= (consume 2) vs < (consume 1) */
         if (lexer.input_string[lexer.cursor_position + 1] == '=') {
-          punctuation_token =
-              (Token){TOKEN_LTE, lexer.input_string + starting_offset_position,
-                      2, starting_offset_position};
+          punctuation_token = (Token){
+              TOKEN_LTE,
+              lexer.input_string + starting_offset_position,
+              2,
+              starting_offset_position,
+          };
           lexer.cursor_position += 2;
           made_punct = true;
           break;
-        } else {
-          punctuation_token =
-              tokenize_punctuation(&lexer, starting_offset_position);
-          lexer.cursor_position += 1;
-          made_punct = true;
-          break;
         }
+        punctuation_token =
+            tokenize_punctuation(&lexer, starting_offset_position);
+        lexer.cursor_position += 1;
+        made_punct = true;
+        break;
 
       case '>':
         if (lexer.input_string[lexer.cursor_position + 1] == '=') {
-          punctuation_token =
-              (Token){TOKEN_GTE, lexer.input_string + starting_offset_position,
-                      2, starting_offset_position};
+          punctuation_token = (Token){
+              TOKEN_GTE,
+              lexer.input_string + starting_offset_position,
+              2,
+              starting_offset_position,
+          };
           lexer.cursor_position += 2;
           made_punct = true;
           break;
-        } else {
-          punctuation_token =
-              tokenize_punctuation(&lexer, starting_offset_position);
-          lexer.cursor_position += 1;
-          made_punct = true;
-          break;
         }
+        punctuation_token =
+            tokenize_punctuation(&lexer, starting_offset_position);
+        lexer.cursor_position += 1;
+        made_punct = true;
+        break;
+
       case '!':
         /* TODO: 2-byte case — lookahead for != (consume 2); ! alone has no
          * token */
         if (lexer.input_string[lexer.cursor_position + 1] == '=') {
-          punctuation_token =
-              (Token){TOKEN_NEQ, lexer.input_string + starting_offset_position,
-                      2, starting_offset_position};
+          punctuation_token = (Token){
+              TOKEN_NEQ,
+              lexer.input_string + starting_offset_position,
+              2,
+              starting_offset_position,
+          };
           lexer.cursor_position += 2;
           made_punct = true;
           break;
-        } else {
-          lexer.cursor_position += 1;
-          break;
         }
+        lexer.cursor_position += 1;
+        break;
+
       default:
         lexer.cursor_position += 1;
         break;
@@ -351,7 +362,7 @@ TokenList *tokenize(const char *input_string) {
   Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
   bool add_to_list = tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
 
-  if (!add_to_list && (lexer.lex_tkn_list_struct->had_error == true)) {
+  if (!add_to_list && lexer.lex_tkn_list_struct->had_error) {
     lexer.lex_tkn_list_struct->had_error = false;
     fprintf(stderr, "%s", "errorrrr");
     return NULL;

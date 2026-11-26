@@ -623,3 +623,20 @@ detection site. Writing that line from a literal format kills the `error_msg` bu
 `current.md` updated: invariant, dispatch mermaid, Part 7 contract/test table, Part 8 EOF
 section and test table. Tests must pin counts (`SELECT@` → 1, `@SELECT` → 0, unterminated → 0)
 because "truncated" is otherwise unasserted.
+
+### Formatting / lint pass (same session, on request)
+
+Learner asked to fix all indentation, formatting and linting. Added `.clang-format` (LLVM,
+2 spaces, 80 cols) and the missing `make fmt` target (Makefile already listed `fmt` in
+`.PHONY` but had no rule). Ran focused `clang-tidy --fix` for else-after-return, implicit
+bool conversion, trailing commas, redundant parens, braces, and declaration/definition
+parameter names; then `make fmt` over all `.c`/`.h` in `src/` and `tests/`. Manually renamed
+the reserved `__EXIT`/`__CONTINUE`/`__CANTPARSE` enum values to `REPL_*`, added missing direct
+includes (`<stdint.h>` in hex.c, `<stdio.h>`/`<stdlib.h>` in test_main.c, `<stdio.h>` in
+test_repl.c), matched header parameter names to definitions, and cleaned comment typos plus
+the `aaaaa` leftover. clang-tidy's auto-fix inserted `(int)` casts on `had_error`; replaced
+those with plain `!had_error` / truthiness so the learner's step-1 loop condition stayed
+readable. Verified: `clang-format --dry-run -Werror` clean, focused clang-tidy clean except
+the three intentional `_POSIX_C_SOURCE` feature-test macros, strict build clean, **38 tests,
+5 failed** — same five red Part 6 tests, same ASan leak (each failing test returns from
+`ASSERT` before `token_list_free`). No behavior changed.

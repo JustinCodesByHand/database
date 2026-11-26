@@ -52,3 +52,6 @@ $(BUILD):
 clean:
 	rm -rf $(BUILD) *.db *.wal
 	rm -f minidb.out
+
+fmt:
+	clang-format -i $(shell find src tests -type f \( -name '*.c' -o -name '*.h' \))

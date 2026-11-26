@@ -31,7 +31,7 @@ typedef enum {
   TOKEN_STRING,
   TOKEN_IDENT,
   TOKEN_EOF,
-  token_error
+  token_error,
 } tokentype;
 
 typedef struct {
@@ -59,7 +59,7 @@ typedef struct {
 
 TokenList *tokenize(const char *input_string);
 
-void token_list_free(TokenList *foo);
+void token_list_free(TokenList *tkn_list_struct);
 
 /* NOTE: `increment_cursor` is `static` in tokenizer.c, so it is file-private
  * and deliberately NOT declared here. A declaration of it in this header would

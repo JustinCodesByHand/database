@@ -452,7 +452,8 @@ static void number_42_is_number_then_eof(void) {
   token_list_free(l);
 }
 
-/* [Part 5] "id=42;" -> IDENT, EQ, NUMBER, SEMI, EOF (5 tokens, all positions). */
+/* [Part 5] "id=42;" -> IDENT, EQ, NUMBER, SEMI, EOF (5 tokens, all positions).
+ */
 static void id_eq_42_semi_is_ident_eq_number_semi_eof(void) {
   TokenList *l = tokenize_with("id=42;");
   ASSERT_NOT_NULL(l);

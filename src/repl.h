@@ -7,6 +7,6 @@
  * Reads lines from `in`, writes results to `lex_tkn_list`, until .exit or EOF.
  * Does NOT take ownership of either stream — the caller closes them.
  */
-void repl_run(FILE *in, FILE *lex_tkn_list);
+void repl_run(FILE *input_stream, FILE *output_stream);
 
 #endif
