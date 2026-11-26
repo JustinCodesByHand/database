@@ -666,6 +666,18 @@ at `ASSERT_NOT_NULL`. That is step 3's target, not a test defect. One genuine ga
 **stderr by design** (Part 7 decision) so REPL output on stdout stays clean. `error_msg` remains
 the static label `"Unexpected character"`; the formatted detail lives only in the printed line.
 
+### Step 3 implemented (test-first)
+
+Added three Part 7 tests before touching code (`SELECT@` → 1 token/error_pos 6, `@SELECT` → 0,
+`SELECT 42 @ ;` → 2 tokens/error_pos 10) and pinned truncation in the unterminated test with
+`ASSERT_EQ_INT(0, total_num_tkns)`. Red checkpoint: **41 tests, 8 failed**. Then replaced the
+unconditional EOF push + `errorrrr`/`return NULL` tail with a single guard:
+`if (!lexers_tkn_list->had_error) { push EOF }`, then return the list. Result: **41 tests, 4
+failed** — all Part 7 tests and the unterminated case green; only the four valid-string tests
+remain red (step 4). Scratch `"SELECT@"` now prints `result: 1 token(s)` with `SELECT`,
+`had_error = true`, `error_pos = 6` — the artifact the learner wanted is intact, no leak.
+ASan leaks remain only in the four red tests (ASSERT returns before `token_list_free`).
+
 **Learner preference — keep explicit `else` branches.** Told to "keep the elses" after seeing
 clang-tidy had removed them. Restored `else` in `is_at_end`, `tkn_list_add`, the `<`/`>`/`!`
 lookahead branches, and `trim` in `repl.c`. `readability-else-after-return` is therefore

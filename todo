@@ -39,9 +39,12 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **33 t
       unterminated reports the opening quote's position. The fifth test encodes the
       partial-list + `had_error` error contract — revisit when Part 7's decision is made.
       `current.md` Part 6 has the exact spans and test table.
-- [ ] **Part 7 — errors:** contract DECIDED 2026-11-26 — partial list + `had_error` +
-      `error_pos` (not `NULL`), so the caller knows where the error is. Implement that
-      contract; `SELECT@` → `error_pos 6`. Resolves the sticky-`had_error` trap.
+- [~] **Part 7 — errors:** contract DECIDED 2026-11-26 — partial list + `had_error` +
+      `error_pos` (not `NULL`), so the caller knows where the error is. Steps 1-3 done
+      (loop guard, `error_reporting` helper at both sites, EOF push guarded + `errorrrr` tail
+      deleted). Three new error tests green: `SELECT@` → 1 token/error_pos 6, `@SELECT` → 0
+      tokens, `SELECT 42 @ ;` → 2 tokens/error_pos 10. Unterminated string also green. Still
+      pending: lone `!` vs guide spec, OOM path routing through the same reporting contract.
 - [ ] **Part 8 — EOF/list robustness:** EOF pointer at end, `token_list_free(NULL)`, 10,000-token
       stress under ASan.
 - [ ] **Part 9 — `token_type_name`** (see bug above; recover from `tests/scratch.c`).

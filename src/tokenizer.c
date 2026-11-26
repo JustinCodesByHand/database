@@ -176,6 +176,16 @@ static Token tokenize_punctuation(Lexer *lexer, size_t starting_index) {
   return new_punctuation_token;
 }
 
+static void error_reporting(Lexer *lexer, size_t starting_offset_position) {
+  lexer->lex_tkn_list_struct->had_error = true;
+  lexer->lex_tkn_list_struct->error_pos = starting_offset_position;
+  lexer->lex_tkn_list_struct->error_msg = "Unexpected character";
+  fprintf(
+      stderr, "Unexpected character '%c' at position %zu\n",
+      (unsigned char)lexer->input_string[lexer->lex_tkn_list_struct->error_pos],
+      lexer->lex_tkn_list_struct->error_pos);
+}
+
 /*
  * Tokenizes `source`. The returned list points INTO `source`,
  * which must outlive the list.
@@ -219,7 +229,7 @@ TokenList *tokenize(const char *input_string) {
       break;
     }
 
-    // everything that is not whitespace starts a token here
+    // get the location of the loaction of the current character in the token
     size_t starting_offset_position = lexer.cursor_position;
 
     // query the char to see if it's a letter
@@ -292,7 +302,6 @@ TokenList *tokenize(const char *input_string) {
         break;
 
       case '<':
-        /* TODO: 2-byte case — lookahead for <= (consume 2) vs < (consume 1) */
         if (lexer.input_string[lexer.cursor_position + 1] == '=') {
           punctuation_token = (Token){
               TOKEN_LTE,
@@ -344,11 +353,13 @@ TokenList *tokenize(const char *input_string) {
           made_punct = true;
           break;
         } else {
+          error_reporting(&lexer, starting_offset_position);
           lexer.cursor_position += 1;
           break;
         }
 
       default:
+        error_reporting(&lexer, starting_offset_position);
         lexer.cursor_position += 1;
         break;
       };
@@ -363,14 +374,10 @@ TokenList *tokenize(const char *input_string) {
       }
     }
   }
-  // if we read '\0', then make EOF token and exit (we always are at end here)
-  Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
-  bool add_to_list = tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
-
-  if (!add_to_list && lexer.lex_tkn_list_struct->had_error) {
-    lexer.lex_tkn_list_struct->had_error = false;
-    fprintf(stderr, "%s", "errorrrr");
-    return NULL;
+  // EOF is a success-only token — an error list stops at the last valid token
+  if (!lexers_tkn_list->had_error) {
+    Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
+    tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
   }
 
   return lexers_tkn_list;

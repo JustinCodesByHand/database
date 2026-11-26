@@ -164,9 +164,12 @@ setted "print at detection site" decision (`unexpected character '%c' at positio
 internal descriptions, not user-facing messages. To name the byte, index the saved offset —
 `lexer->input_string[starting_offset_position]` — not a cursor that may later be advanced;
 `char` promotes to `int` for `%c`, so cast to `(unsigned char)` for bytes >= 128. Scratch
-`"SELECT@"` confirms step 3 is still
-needed: the EOF push reaches `tkn_list_add`'s else branch, which overwrites `error_pos` /
-`error_msg`, then the `errorrrr` tail clears `had_error` and returns NULL (leak).
+`"SELECT@"` confirmed step 3 was needed: the EOF push reached `tkn_list_add`'s else branch,
+which overwrote `error_pos` / `error_msg`, then the `errorrrr` tail cleared `had_error` and
+returned NULL (leak). **Step 3 DONE:** EOF push is now guarded by `if (!had_error)` and the tail
+is deleted, so the list is returned intact with a freeable buffer. Still open: OOM must use the
+same reporting contract (there is no offending byte to index for `%c`), and lone `!` still
+reports an error.
 
 **Where `error_pos` comes from:** the main loop captures `starting_offset_position =
 lexer.cursor_position` before dispatch (`tokenizer.c:218`). In the `default:` and lone-`!`
