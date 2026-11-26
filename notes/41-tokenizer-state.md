@@ -154,6 +154,17 @@ Stopping immediately also dissolves the sticky-`had_error` push gate: no push fo
 error. Tests must assert counts (e.g. `SELECT@` → 1 token, `@SELECT` → 0, unterminated string
 → 0).
 
+**Step 2 review (2026-11-26):** learner implemented `static void error_reporting(Lexer *,
+size_t, const char *)` at `tokenizer.c:179` and calls it in the lone-`!` else and `default:`
+branches, passing `starting_offset_position` before the cursor increment. Call sites and
+position source are correct. Two gaps: (1) the printed line is `fprintf(stderr, "error_msg:
+%s", error_msg)` — it omits both the byte and its position, so the console does not honor the
+setted "print at detection site" decision (`unexpected character '%c' at position %zu`);
+(2) the labels passed ("2nd char in; 2 char punctuation", "punctuation tkn invalid") are
+internal descriptions, not user-facing messages. Scratch `"SELECT@"` confirms step 3 is still
+needed: the EOF push reaches `tkn_list_add`'s else branch, which overwrites `error_pos` /
+`error_msg`, then the `errorrrr` tail clears `had_error` and returns NULL (leak).
+
 **Where `error_pos` comes from:** the main loop captures `starting_offset_position =
 lexer.cursor_position` before dispatch (`tokenizer.c:218`). In the `default:` and lone-`!`
 branches that value *is* the offending byte's index, provided the helper is called **before**

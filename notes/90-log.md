@@ -641,6 +641,16 @@ the three intentional `_POSIX_C_SOURCE` feature-test macros, strict build clean,
 5 failed** — same five red Part 6 tests, same ASan leak (each failing test returns from
 `ASSERT` before `token_list_free`). No behavior changed.
 
+### Step 2 review
+
+Learner asked whether step 2 was ready for step 3. Read the working tree: `error_reporting`
+helper exists and both unexpected-branch sites call it with `starting_offset_position` before
+the cursor increment — structurally correct. Flagged that the printed line lacks the byte and
+position (settle decision wanted `unexpected character '%c' at position %zu`), and that the
+labels are internal-sounding. Ran scratch on `"SELECT@"`: output `error_msg: punctuation tkn
+invaliderrorrrr`, NULL return, leak — confirms step 3's EOF guard / `errorrrr` removal is the
+next required edit. Step 2 code is uncommitted.
+
 **Learner preference — keep explicit `else` branches.** Told to "keep the elses" after seeing
 clang-tidy had removed them. Restored `else` in `is_at_end`, `tkn_list_add`, the `<`/`>`/`!`
 lookahead branches, and `trim` in `repl.c`. `readability-else-after-return` is therefore
