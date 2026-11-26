@@ -608,3 +608,11 @@ the partial-list choice makes `error_pos` the primary artifact, but `tkn_list_ad
 the sticky `had_error`, so recording an error mid-loop will refuse the EOF push unless the
 scanner stops at the first error or the gate is separated from the general flag. One contract
 now covers OOM too — the existing `errorrrr`/`return NULL` tail is obsolete.
+
+**Refinement proposed by the learner (not yet settled):** print the error message to the
+console and return the list *truncated at the error*. Observed consequence: recording the
+error, stopping immediately, and skipping the EOF push means `tkn_list_add`'s sticky gate
+never fires — the trap dissolves. Printing at the detection site via a literal `fprintf`
+format also removes the need for a fixed `error_msg[20]` buffer. Open sub-questions: stderr
+vs stdout, whether the truncated list still carries EOF, and one print site vs caller-owned
+printing.
