@@ -660,6 +660,12 @@ at `ASSERT_NOT_NULL`. That is step 3's target, not a test defect. One genuine ga
 == 0`) required by `current.md`. Helper on disk now takes only the position and prints
 `Unexpected character '%c' at position %zu` — the byte-extraction advice landed.
 
+**Print-location question:** learner said the step 2 error print "isn't working." Verified it is —
+`./build/scratch 'SELECT@' 2>/dev/null` shows only scratch's stdout (`input : ...`), while
+`2>&1 >/dev/null` shows `Unexpected character '@' at position 6` plus `errorrrr`. The line is on
+**stderr by design** (Part 7 decision) so REPL output on stdout stays clean. `error_msg` remains
+the static label `"Unexpected character"`; the formatted detail lives only in the printed line.
+
 **Learner preference — keep explicit `else` branches.** Told to "keep the elses" after seeing
 clang-tidy had removed them. Restored `else` in `is_at_end`, `tkn_list_add`, the `<`/`>`/`!`
 lookahead branches, and `trim` in `repl.c`. `readability-else-after-return` is therefore
