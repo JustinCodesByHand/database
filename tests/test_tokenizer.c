@@ -563,6 +563,41 @@ static void unterminated_string_reports_opening_quote(void) {
   ASSERT_NOT_NULL(l);
   ASSERT(l->had_error);
   ASSERT_EQ_INT(0, l->error_pos);
+  ASSERT_EQ_INT(0, l->total_num_tkns);
+  token_list_free(l);
+}
+
+/* [Part 7] A bad byte truncates the list: SELECT survives, EOF is not pushed.
+ */
+static void bad_byte_truncates_after_valid_token(void) {
+  TokenList *l = tokenize_with("SELECT@");
+  ASSERT_NOT_NULL(l);
+  ASSERT(l->had_error);
+  ASSERT_EQ_INT(6, l->error_pos);
+  ASSERT_EQ_INT(1, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_SELECT, l->token_list_buffer[0].token_type);
+  token_list_free(l);
+}
+
+/* [Part 7] An error at byte 0 yields an empty list — there is no EOF token. */
+static void bad_byte_at_start_gives_empty_list(void) {
+  TokenList *l = tokenize_with("@SELECT");
+  ASSERT_NOT_NULL(l);
+  ASSERT(l->had_error);
+  ASSERT_EQ_INT(0, l->error_pos);
+  ASSERT_EQ_INT(0, l->total_num_tkns);
+  token_list_free(l);
+}
+
+/* [Part 7] Bytes after the error are never examined. */
+static void bad_byte_stops_scan_before_trailing_input(void) {
+  TokenList *l = tokenize_with("SELECT 42 @ ;");
+  ASSERT_NOT_NULL(l);
+  ASSERT(l->had_error);
+  ASSERT_EQ_INT(10, l->error_pos);
+  ASSERT_EQ_INT(2, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_SELECT, l->token_list_buffer[0].token_type);
+  ASSERT_EQ_INT(TOKEN_NUMBER, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
 
@@ -615,4 +650,9 @@ void suite_tokenizer(void) {
   RUN_TEST(empty_quoted_string_is_zero_length);
   RUN_TEST(quoted_string_does_not_swallow_following_ident);
   RUN_TEST(unterminated_string_reports_opening_quote);
+
+  /* Part 7 - lexical errors truncate the list; no EOF on the error path */
+  RUN_TEST(bad_byte_truncates_after_valid_token);
+  RUN_TEST(bad_byte_at_start_gives_empty_list);
+  RUN_TEST(bad_byte_stops_scan_before_trailing_input);
 }

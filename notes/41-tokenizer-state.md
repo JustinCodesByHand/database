@@ -154,6 +154,13 @@ Stopping immediately also dissolves the sticky-`had_error` push gate: no push fo
 error. Tests must assert counts (e.g. `SELECT@` → 1 token, `@SELECT` → 0, unterminated string
 → 0).
 
+**Step 3 DONE (learner-written, 2026-11-26):** EOF push is guarded by `if (!had_error)` and
+the `errorrrr` / `return NULL` tail is gone. His first version left `bool add_to_list` declared
+but unused inside the guard — `-Werror=unused-variable` blocked the build; removed the variable
+and kept `tkn_list_add(...)` as a bare call. Added the three Part 7 tests plus the count
+assertion; **41 tests, 4 failed**, only the four valid-string tests still red. OOM path and lone
+`!` remain open.
+
 **Step 2 review (2026-11-26):** learner implemented `static void error_reporting(Lexer *,
 size_t, const char *)` at `tokenizer.c:179` and calls it in the lone-`!` else and `default:`
 branches, passing `starting_offset_position` before the cursor increment. Call sites and

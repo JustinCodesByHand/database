@@ -681,3 +681,11 @@ and the count assertion in `tests/test_tokenizer.c`, and restored `todo` / `note
 `notes/90-log.md` to their pre-step-3 text. **His step 2 work was preserved** (`error_reporting`
 helper and both call sites) and is now committed as part of this rollback commit. Verified back
 to **38 tests, 5 failed** — the original Part 6 red checkpoint.
+
+### Step 3 written by learner; tests added and checked (same session)
+
+Learner wrote the step 3 guard himself. His first build failed on a leftover
+`bool add_to_list` (declared but unused under `-Werror`); removed the variable so the push is a
+bare `tkn_list_add(...)` call. Wrote the three Part 7 tests and added the missing count
+assertion to the unterminated test. Result: **41 tests, 4 failed** — all error tests green, only
+the four valid-string tests red (step 4). Format check and strict build clean.

@@ -245,9 +245,7 @@ TokenList *tokenize(const char *input_string) {
       // assign fields after reading entire word
       Token word_tkn = tokenize_word(&lexer, starting_offset_position);
       tkn_list_add(lexer.lex_tkn_list_struct, word_tkn);
-    }
-    // TODO: parse span of digits as number token
-    else if (isdigit((unsigned char)peek(&lexer))) {
+    } else if (isdigit((unsigned char)peek(&lexer))) {
       while (isdigit((unsigned char)peek(&lexer))) {
         lexer.cursor_position += 1;
       }
@@ -340,8 +338,6 @@ TokenList *tokenize(const char *input_string) {
         }
 
       case '!':
-        /* TODO: 2-byte case — lookahead for != (consume 2); ! alone has no
-         * token */
         if (lexer.input_string[lexer.cursor_position + 1] == '=') {
           punctuation_token = (Token){
               TOKEN_NEQ,
@@ -363,26 +359,15 @@ TokenList *tokenize(const char *input_string) {
         lexer.cursor_position += 1;
         break;
       };
-      // Unrecognised character (operator, punctuation, digit, ...). We do
-      // not tokenise these yet, but we MUST consume one so the loop can
-      // never spin forever on the same char.
-      // TODO: emit real tokens (e.g. ';' -> TOKEN_SEMICOLON) and/or error
-      // reporting (error_msg + error_pos + had_error) — see the open design
-      // question about how OOM/lex errors should surface.
       if (made_punct) {
         tkn_list_add(lexer.lex_tkn_list_struct, punctuation_token);
       }
     }
   }
-  // if we read '\0', then make EOF token and exit (we always are at end here)
-  Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
-  bool add_to_list = tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
 
-  if (!add_to_list && lexer.lex_tkn_list_struct->had_error) {
-    lexer.lex_tkn_list_struct->had_error = false;
-    fprintf(stderr, "%s", "errorrrr");
-    return NULL;
+  if (!lexer.lex_tkn_list_struct->had_error) {
+    Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
+    tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
   }
-
   return lexers_tkn_list;
 }
