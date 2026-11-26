@@ -31,7 +31,9 @@ identifiers with digits/underscores (`user_id2`) but not starting with a digit;
 - [x] **OOM/error reporting — DECIDED 2026-11-26:** learner chose the partial list with
       `had_error = true`, `error_pos` at the offending byte, `error_msg` set; caller frees.
       Reason: "so I know where the error exists." Applies to lexical errors AND OOM; the
-      `errorrrr` / `return NULL` tail in `tokenize` is now obsolete.
+      `errorrrr` / `return NULL` tail in `tokenize` is now obsolete. Refined same day: error
+      prints one line to stderr at the detection site and returns the list truncated at the
+      bad byte with no EOF token; EOF is success-only.
 - [ ] **`had_error` is overloaded:** it is both the buffer-growth failure flag and the
       struct's general error flag (paired with `error_msg`/`error_pos`). A caller cannot tell
       "malformed SQL" from "out of memory". It is also sticky — never reset.

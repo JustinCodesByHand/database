@@ -143,3 +143,13 @@ the flag mid-loop therefore kills the final EOF push (and any later token pushes
 implementation must either stop at the first error and skip the EOF push, or separate the
 allocation-failure gate from the general error flag. `error_msg` is a `const char *` with no
 buffer field — a local `char buf[]` would dangle.
+
+**Refinement settled 2026-11-26:** on error, `fprintf(stderr, "unexpected character '%c' at
+position %zu\n", c, pos)` at the detection site, and return the list **truncated at the bad
+byte with NO EOF token** (learner: "we didn't finish reading the entire message"). Print from
+a literal format removes the need for any `error_msg` buffer; `error_msg` may stay a `const
+char *` to a static label, with `error_pos` + `source[error_pos]` carrying the byte. EOF is
+therefore a success-only token — the parser must check `had_error` before relying on it.
+Stopping immediately also dissolves the sticky-`had_error` push gate: no push follows the
+error. Tests must assert counts (e.g. `SELECT@` → 1 token, `@SELECT` → 0, unterminated string
+→ 0).

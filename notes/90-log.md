@@ -616,3 +616,10 @@ never fires — the trap dissolves. Printing at the detection site via a literal
 format also removes the need for a fixed `error_msg[20]` buffer. Open sub-questions: stderr
 vs stdout, whether the truncated list still carries EOF, and one print site vs caller-owned
 printing.
+
+**Settled same session:** no EOF on the error path — learner: *"we didn't finish reading the
+entire message."* So the list stops at the last valid token, and stderr gets one line at the
+detection site. Writing that line from a literal format kills the `error_msg` buffer question.
+`current.md` updated: invariant, dispatch mermaid, Part 7 contract/test table, Part 8 EOF
+section and test table. Tests must pin counts (`SELECT@` → 1, `@SELECT` → 0, unterminated → 0)
+because "truncated" is otherwise unasserted.

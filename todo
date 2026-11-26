@@ -55,9 +55,10 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **33 t
 ## Open design decisions (decide before the parser grows)
 
 - [x] **OOM/error reporting — DECIDED 2026-11-26:** return the partial list with
-      `had_error = true`, `error_pos` at the bad byte, `error_msg` set; caller frees. One
-      contract for lexical errors and allocation failure. The existing `errorrrr`/`return
-      NULL` tail must be rewritten.
+      `had_error = true`, `error_pos` at the bad byte, `error_msg` set; caller frees. Print
+      one line to stderr at the detection site; truncate the list at the bad byte with **no
+      EOF** (EOF is success-only). One contract for lexical errors and allocation failure.
+      The existing `errorrrr`/`return NULL` tail must be rewritten.
 - [ ] **`token_type_name` spelling:** enum names (`"STAR"`, `"LTE"`) vs user-facing SQL symbols
       (`"*"`, `"<="`). The guide derives `expect()` messages from it, so decide now.
 - [ ] **EOF token field convention** (see bug above).

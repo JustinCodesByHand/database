@@ -32,6 +32,10 @@ waiting to recur. The cursor must always end up exactly one step past the span.
 Ask of every new scanner: **which bytes are the token, which bytes does the cursor consume,
 and are those the same answer?**
 
+One exception, decided in Part 7: **EOF is emitted only when the whole input was read.** An
+error path returns a list truncated before the bad byte, with **no EOF token**. The parser
+must check `had_error` before relying on an EOF being present.
+
 ---
 
 ## Part 1 — punctuation: `,` `;` `(` `)`
@@ -171,7 +175,7 @@ graph TD
   N --> L
   Q --> L
   O --> L
-  L --> Z[EOF token - Part 8]
+  L --> Z[EOF on success only - Part 8]
 ```
 
 Parts 1-5 are already on disk. Parts 6-7 add branches to the same loop; Part 8 fixes the
@@ -270,38 +274,48 @@ OOM tail — `if (!add_to_list && had_error) { had_error = false; fprintf(stderr
 "errorrrr"); return NULL; }` — is the rejected (b) behavior, half-done: it leaks the list
 and buffer and erases the flag. It must be rewritten to return the partial list instead.
 
-**The `error_msg` storage problem:** `error_msg` is a `const char *` with no string buffer
-field. Options: (1) point it at a string literal (e.g. `"unexpected character"`) and let the
-caller read `input[error_pos]` for the actual byte; (2) add a fixed `char` array to
-`TokenList` and `snprintf` into it; (3) a `static` buffer (not reentrant). A local `char
-buf[64]` dangles when the function returns. Pick one and document it.
+**Refinement DECIDED 2026-11-26: print + truncate.** On detecting an error, emit one line to
+**stderr** at the detection site and return the list **truncated at the bad byte**:
 
-**The sticky-flag trap:** `tkn_list_add` refuses every push once `had_error == true`. Set the
-flag inside the loop and the *next* push — including the final EOF push — fails. Ways out:
-- stop at the first error and arrange the return to the agreed shape without pushing EOF;
-- add a separate lexical-error flag, leaving `had_error` for allocation only;
-- change `tkn_list_add` to gate on a local "buffer usable" condition rather than the general
-  error flag.
+```c
+fprintf(stderr, "unexpected character '%c' at position %zu\n", c, pos);
+```
 
-`notes/41` defect 4 ("`had_error` is sticky and overloaded") is why this bites; don't
-rediscover it the hard way.
+- The learner's reason for no EOF: *"we didn't finish reading the entire message."* EOF is a
+  success-only token; an error list ends at the last valid token. The parser must check
+  `had_error` before assuming an EOF exists.
+- Printing from a literal format string removes the whole `error_msg` storage problem: no
+  `char[20]` (too small for `"unexpected character '@'"` — 25 bytes with NUL), no
+  `snprintf` into a struct field, no dangling local buffer. `error_msg` can stay a
+  `const char *` pointing at a static label like `"unexpected character"`; `error_pos` plus
+  `source[error_pos]` carry the exact byte.
+- Side-effect trade-off: `tokenize` now writes to stderr on every error, including in tests;
+  a later REPL formatter could print a second line. Use **stderr**, not stdout, so REPL
+  output stays clean, and route lexical errors and OOM through **one** reporting helper so
+  they cannot drift apart.
 
-**Other decisions to fill in:** stop at the first error or skip and continue? Does a bad
-byte become a `token_error` token or only list metadata? What happens to a lone `!` (Part 3
-left it in `default`; there is no `TOKEN_BANG`)? Write the answers down as comments and
-tests.
+**The sticky-flag trap is resolved by truncation.** `tkn_list_add` refuses every push once
+`had_error == true` — but if the scanner records the error, `break`s immediately, and skips
+the EOF push, no further push is attempted. That was the reason to stop at the first error;
+don't "fix" the gate until you've seen this. (`notes/41` defect 4 explains why the flag is
+both the error record and the push gate.)
+
+**Still open:** does the bad byte become a `token_error` token, or only list metadata? What
+happens to a lone `!` (Part 3 left it in `default`; there is no `TOKEN_BANG`)? Write the
+answers down as comments and tests.
 
 **Test first:**
 
 | Input | Assertion |
 |---|---|
-| `"SELECT@"` | list non-NULL and freeable; `had_error` true, `error_pos == 6` |
-| `"@SELECT"` | error at 0 — position is the offending byte, not the end |
-| `"SELECT 42 @ ;"` | error at 10, after valid tokens — earlier tokens were handled |
-| `"'abc"` | the Part 6 unterminated case, now using this contract |
+| `"SELECT@"` | list non-NULL and freeable; **1 token** (`SELECT`), `had_error` true, `error_pos == 6`, **no EOF** |
+| `"@SELECT"` | **0 tokens**; error at 0 — position is the offending byte, not the end |
+| `"SELECT 42 @ ;"` | error at 10; **2 tokens** (`SELECT`, `NUMBER(42)`) — the `;` after the error is never seen |
+| `"'abc"` | the Part 6 unterminated case: **0 tokens**, `had_error` true, `error_pos == 0` (the opening quote) |
 
-If you choose (b), ask how you will assert `error_pos` at all — that friction is the reason
-(a) is the easier contract to test and to use from the REPL.
+The already-written unterminated test (`unterminated_string_reports_opening_quote`) asserts
+the error metadata but not the count — add `ASSERT_EQ_INT(0, l->total_num_tkns)` to it when
+you implement Part 7, so "truncated" is pinned rather than assumed.
 
 **Checkpoint:** no input is silently mangled; every byte is consumed into a token,
 whitespace, or an error. ASan clean on the error path too.
@@ -310,12 +324,13 @@ whitespace, or an error. ASan clean on the error path too.
 
 **Context:** `notes/41` defects 2/3/4/6 and the guide's last two checklist items.
 
-**EOF convention:** on disk the final token is
+**EOF convention (successful tokenization only):** on disk the final token is
 `Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};` — pointer at
 the source *start*, position at the *end*. The consistent shape is
 `{TOKEN_EOF, lexer.input_string + lexer.cursor_position, 0, lexer.cursor_position}`:
 pointer and position agree, `word_length = 0`. A one-past-the-end pointer is legal C as long
-as it is not dereferenced; `%.*s` with precision 0 does not dereference it.
+as it is not dereferenced; `%.*s` with precision 0 does not dereference it. On the error
+path there is **no EOF token at all** — the list stops at the last valid token (Part 7).
 
 **Growth path:** `grow_list_capisity` returns `void`, doubles capacity (0→1 guard), uses the
 temp variable `new_mem_address` (correct realloc pattern), and sets `had_error = true` on
@@ -336,6 +351,7 @@ actually ran. Do not claim an OOM test you did not run.
 |---|---|
 | EOF span for `""` | one token: EOF `offset_position == 0`, `word_length == 0`, `input_string == input + 0` |
 | EOF span for `"SELECT"` | EOF `offset_position == 6`, `word_length == 0`, `input_string == input + 6` |
+| Error path `"SELECT@"` | no EOF token: last token is `SELECT`; the EOF push is skipped entirely |
 | `token_list_free(NULL);` | no crash — read the function first; it is already NULL-safe, test it anyway |
 | 10,000-token input | build `"a "` × 10000 (20,000 bytes + NUL); expect 10,001 tokens; token `2i` is IDENT(pos `2i`, len 1); last is EOF(pos 20000, len 0); free the input buffer and list. Optionally assert `tknlst_capacity >= 10001` to see growth happened. ASan/UBSan clean. |
 
