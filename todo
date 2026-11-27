@@ -27,8 +27,9 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **41 t
 - [ ] **`token_type_name` is not implemented** (header declaration commented out). The 27-case
       body is recoverable from `tests/scratch.c` (`scratch_type_name`).
       `notes/42-token-type-name.md`.
-- [ ] **EOF token fields are inconsistent**: `input_string` = start of input, `start_index` =
-      end. Natural value is `lexer.input_string + lexer.cursor_position`. defect 6.
+- [x] **EOF token fields fixed 2026-11-27:** `token_string = lexer.input_string +
+      lexer.cursor_position`, `token_length = 0`, `source_index = lexer.cursor_position`;
+      test-first assertion in `select_input_is_select_then_eof`. defect 6 closed.
 
 ## Next up — tokenizer (in order)
 
@@ -42,8 +43,8 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **41 t
       no EOF on error, `error_pos` preserved. `SELECT@` → 1 token/pos 6, `@SELECT` → 0,
       `SELECT 42 @ ;` → 2 tokens/pos 10, unterminated → 0 tokens/pos 0. Still open separately:
       OOM path must use the same reporting contract (no offending byte to index for `%c`).
-- [ ] **Part 8 — EOF/list robustness:** EOF pointer at end, `token_list_free(NULL)`, 10,000-token
-      stress under ASan.
+- [~] **Part 8 — EOF/list robustness:** EOF pointer at end DONE 2026-11-27; remaining:
+      `token_list_free(NULL)` test, 10,000-token stress under ASan, OOM-path reasoning.
 - [ ] **Part 9 — `token_type_name`** (see bug above; recover from `tests/scratch.c`).
 - [ ] **Part 10 — full checkpoint:** `"SELECT * FROM users WHERE id = 3;"` (10 exact spans in
       `current.md`) + grammar-free `"FROM SELECT , , ;"`.

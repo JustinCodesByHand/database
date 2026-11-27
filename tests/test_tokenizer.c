@@ -28,7 +28,8 @@ static void whitespace_only_input_is_single_eof(void) {
 
 /* [checklist] "SELECT" produces two tokens: TOKEN_SELECT then TOKEN_EOF. */
 static void select_input_is_select_then_eof(void) {
-  TokenList *tknlst = tokenize_with("SELECT");
+  const char *input = "SELECT";
+  TokenList *tknlst = tokenize_with(input);
   ASSERT_NOT_NULL(tknlst);
   ASSERT_EQ_INT(2, tknlst->total_num_tkns);
 
@@ -37,8 +38,11 @@ static void select_input_is_select_then_eof(void) {
   ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].source_index);
   ASSERT_EQ_INT(6, tknlst->token_list_buffer[0].token_length);
 
-  /* then the end-of-input marker */
+  /* then the end-of-input marker: a zero-length span at the NUL */
   ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[1].token_type);
+  ASSERT_EQ_INT(6, tknlst->token_list_buffer[1].source_index);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[1].token_length);
+  ASSERT(tknlst->token_list_buffer[1].token_string == input + 6);
 
   token_list_free(tknlst);
 }

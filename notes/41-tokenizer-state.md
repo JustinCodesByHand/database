@@ -56,10 +56,10 @@ by the `static const keyword KEYWORDS[]` table + one loop in `tokenize_word` (le
    memory". Still an open design decision.
 5. **`token_type_name` is not implemented.** Declaration commented out in the header. See
    [42-token-type-name](42-token-type-name.md).
-6. **EOF token fields are inconsistent.** `{TOKEN_EOF, lexer.input_string, 0,
-   lexer.cursor_position}` sets `token_string` to the *start* of input but `source_index` to the
-   *end*. `token_length = 0` is correct. Natural value: `lexer.input_string +
-   lexer.cursor_position`. (Field names updated 2026-11-27.)
+6. ~~**EOF token fields are inconsistent.**~~ **CLOSED 2026-11-27:** the EOF initializer now uses
+   `lexer.input_string + lexer.cursor_position` for `token_string`, with `token_length = 0` and
+   `source_index = lexer.cursor_position`. Test-first assertion added in
+   `select_input_is_select_then_eof`; 41 tests, 0 failed.
 7. **Unknown characters are silently dropped** (the `else` in `tokenize`). Fine as a hang-guard,
    but there is no error reported yet — the guide wants e.g. `"SELECT@"` to name the character.
    Also blocks `,` `;` `(` `)` and all comparison operators, which the chapter needs next.

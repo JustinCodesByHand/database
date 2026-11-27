@@ -80,7 +80,8 @@ quote". The crack is treating EOF as a marker for the last real character. It is
 end of the *input*, so its byte is the NUL after all characters. For `'hello'`, quote is index 6,
 NUL is index 7, cursor is 7. Nudge asks which index the input actually ends at.
 
-**Check landed 2026-11-27:** learner answered 7 for the end of `'hello'`. Therefore EOF's
-`token_string = lexer.input_string + lexer.cursor_position` for any input — a zero-length span
-at the NUL, satisfying `token_string == input_string + source_index`. Next: write the assertion
-before changing `tokenize`'s EOF initializer.
+**CLOSED 2026-11-27:** EOF's `token_string = lexer.input_string + lexer.cursor_position` for any
+input — a zero-length span at the NUL, satisfying `token_string == input_string + source_index`.
+Test-first: an assertion in `select_input_is_select_then_eof` (`token_string == input + 6`,
+`source_index == 6`, `token_length == 0`) failed with **41 tests, 1 failed**; after changing the
+EOF initializer the suite is **41 tests, 0 failed**, build and ASan clean. Assistant wrote both on request.

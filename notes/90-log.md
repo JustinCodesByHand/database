@@ -912,3 +912,13 @@ character. Recorded in `notes/60`; nudge asks which index the input ends at.
 
 Learner corrected to 7 — input ends at the NUL, not the last visible byte. Recorded in `notes/60`.
 Next step is a failing test assertion for EOF's `token_string`, then the one-line fix in `tokenize`.
+
+### 2026-11-27 — EOF span written and verified; Part 8 begins
+
+Learner asked to write the EOF test and fix and then move on. Test-first: added a named `input`
+in `select_input_is_select_then_eof` and asserted EOF `source_index == 6`, `token_length == 0`,
+`token_string == input + 6`; it failed (41 tests, 1 failed). Changed the EOF initializer to
+`{TOKEN_EOF, lexer.input_string + lexer.cursor_position, 0, lexer.cursor_position}`; build clean,
+41 tests 0 failed, ASan clean. Marked EOF convention and defect 6 closed in `notes/41`,
+`notes/60`, `current.md` and `todo`. Remaining Part 8: `token_list_free(NULL)`, 10,000-token
+stress, and honest OOM reasoning.

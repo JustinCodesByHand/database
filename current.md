@@ -387,13 +387,13 @@ whitespace, or an error. ASan clean on the error path too.
 
 **Context:** `notes/41` defects 2/3/4/6 and the guide's last two checklist items.
 
-**EOF convention (successful tokenization only):** on disk the final token is
-`Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};` — pointer at
-the source *start*, position at the *end*. The consistent shape is
+**EOF convention — DONE 2026-11-27:** the final token is now
 `{TOKEN_EOF, lexer.input_string + lexer.cursor_position, 0, lexer.cursor_position}`:
-pointer and position agree, `word_length = 0`. A one-past-the-end pointer is legal C as long
-as it is not dereferenced; `%.*s` with precision 0 does not dereference it. On the error
-path there is **no EOF token at all** — the list stops at the last valid token (Part 7).
+pointer and position agree, `token_length = 0`. Test-first assertion in
+`select_input_is_select_then_eof` failed before the fix and passes after it. A one-past-the-end
+pointer is legal C as long as it is not dereferenced; `%.*s` with precision 0 does not dereference
+it. On the error path there is **no EOF token at all** — the list stops at the last valid token
+(Part 7).
 
 **Growth path:** `grow_list_capisity` returns `void`, doubles capacity (0→1 guard), uses the
 temp variable `new_mem_address` (correct realloc pattern), and sets `had_error = true` on
@@ -412,8 +412,8 @@ actually ran. Do not claim an OOM test you did not run.
 
 | Test | Assertions |
 |---|---|
-| EOF span for `""` | one token: EOF `offset_position == 0`, `word_length == 0`, `input_string == input + 0` |
-| EOF span for `"SELECT"` | EOF `offset_position == 6`, `word_length == 0`, `input_string == input + 6` |
+| EOF span for `""` | one token: EOF `source_index == 0`, `token_length == 0`, `token_string == input + 0` |
+| EOF span for `"SELECT"` | EOF `source_index == 6`, `token_length == 0`, `token_string == input + 6` — DONE 2026-11-27 |
 | Error path `"SELECT@"` | no EOF token: last token is `SELECT`; the EOF push is skipped entirely |
 | `token_list_free(NULL);` | no crash — read the function first; it is already NULL-safe, test it anyway |
 | 10,000-token input | build `"a "` × 10000 (20,000 bytes + NUL); expect 10,001 tokens; token `2i` is IDENT(pos `2i`, len 1); last is EOF(pos 20000, len 0); free the input buffer and list. Optionally assert `tknlst_capacity >= 10001` to see growth happened. ASan/UBSan clean. |

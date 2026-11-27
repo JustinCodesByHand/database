@@ -404,7 +404,8 @@ TokenList *tokenize(const char *input_string) {
   }
 
   if (!lexer.lex_tkn_list_struct->had_error) {
-    Token eof_tkn = {TOKEN_EOF, lexer.input_string, 0, lexer.cursor_position};
+    Token eof_tkn = {TOKEN_EOF, lexer.input_string + lexer.cursor_position, 0,
+                     lexer.cursor_position};
     tkn_list_add(lexer.lex_tkn_list_struct, eof_tkn);
   }
   return lexers_tkn_list;
