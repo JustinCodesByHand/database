@@ -949,3 +949,9 @@ Learner was unsure why `token_type_name`'s fallback is after the switch rather t
 `default:`. Built two tiny enums in `/tmp/opencode/switch-demo`: missing enumerator without
 `default:` fails under `-Werror=switch`; the same switch with `default:` compiles clean. Recorded
 in `notes/42`; check asks which version fails if a new token type is added tomorrow.
+
+### 2026-11-27 — -Wswitch check landed
+
+Learner stated the rule accurately: the compiler errors on an unhandled enum value. Confirmed that
+this is exactly the no-default version. Remaining connection to pin: moving the fallback into
+`default:` suppresses that same check.
