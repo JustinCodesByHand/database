@@ -179,6 +179,14 @@ subtracts `starting_offset_position`, so for `'hello'` it yields 7 instead of 5;
 comment still describes an unconditional increment. The dispatch arm also still pushes the
 string token unconditionally on error, letting `tkn_list_add` overwrite `error_pos`/`error_msg`.
 
+**Remaining failure mechanism (2026-11-27):** on `'abc`, `error_reporting` correctly sets
+`had_error = true`, `error_pos = 0`, `error_msg = "Unexpected character"` and prints the byte.
+The string dispatch arm then calls `tkn_list_add` unconditionally. That function's else branch is
+the *allocation-failure* path: it overwrites `error_pos` with `newToken.source_index` (1) and
+`error_msg` with the realloc label. No new flag is needed — reuse the step-3 EOF guard shape:
+push the string token only when `!had_error`. Then the lexical error survives, the list stays
+empty, and the main loop exits via `had_error`.
+
 **Length fix written by assistant on request (2026-11-27):** in the success branch,
 `token_length = cursor_position - string_token.source_index` is computed **before** the closing
 quote is consumed; the increment moved after it, and the stale comment moved with it. Verified:

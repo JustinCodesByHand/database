@@ -852,3 +852,11 @@ the byte or pointer, (2) the cursor at loop exit is the exclusive end of content
 before the increment, (3) the length is measured from `source_index`, not the opening quote. The
 load-bearing idea is (2); once it is held, (1) and (3) are bookkeeping. Recorded in `notes/41`,
 `current.md` and `todo`; code + notes committed together.
+
+### 2026-11-27 — explained the last step-4 failure
+
+Learner asked how to fix the remaining test rather than asking for code. Explained the mechanism:
+the lexical error is reported correctly at detection, then the unguarded string push enters
+`tkn_list_add`'s allocation-failure branch, which overwrites `error_pos` (0 → 1) and the message.
+Connected the fix to the EOF guard he already wrote in step 3 — same `!had_error` shape, no new
+state. Recorded in `notes/41`; ended with a request to apply the guard and report the suite.
