@@ -344,10 +344,11 @@ TokenList *tokenize(const char *input_string) {
 
     } else if ((unsigned char)peek(&lexer) == '\'') {
       Token string_token = tokenize_string(&lexer, starting_offset_position);
-      if (string_token.token_type == token_error) {
-        break;
+      /* tokenize_string sets had_error on an unterminated string; pushing that
+       * failed token would let tkn_list_add overwrite error_pos/error_msg. */
+      if (!lexer.lex_tkn_list_struct->had_error) {
+        tkn_list_add(lexer.lex_tkn_list_struct, string_token);
       }
-      tkn_list_add(lexer.lex_tkn_list_struct, string_token);
     } else {
       Token punctuation_token;
       bool made_punct = false;

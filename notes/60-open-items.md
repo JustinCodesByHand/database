@@ -10,7 +10,10 @@ strings, the error contract, EOF span, `token_type_name`, `token_list_free(NULL)
 stress test, full-statement checkpoint and grammar-free input. Details:
 [41-tokenizer-state](41-tokenizer-state.md) and [42-token-type-name](42-token-type-name.md).
 
-Next: **Chapter 3 (parser / AST)** at `src/minidb-c-guide.md:2664`.
+Next: **Chapter 3 (parser / AST)** at `src/minidb-c-guide.md:2664`. The skeleton is already on disk
+(2026-11-27): AST types, arena, parser cursor helpers and error propagation — see
+[44-parser-ast](44-parser-ast.md). The first real task is the failing test for
+`SELECT * FROM users;`.
 
 ## Open design decisions (decide before the parser grows)
 

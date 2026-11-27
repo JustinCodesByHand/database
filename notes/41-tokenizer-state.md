@@ -188,14 +188,17 @@ string token unconditionally on error, letting `tkn_list_add` overwrite `error_p
 
 **Step 4 GREEN 2026-11-27:** learner added a guard in the string dispatch arm —
 `if (string_token.token_type == token_error) break;` before the push. Build clean, **41 tests,
-0 failed**, ASan clean. Note the guard uses `token_type` rather than the `had_error` check that
-was discussed: it works today because `tokenize_string` initialises the type to `token_error` and
-only changes it on success, and `break` is redundant since the loop's `!had_error` condition would
-exit anyway. The contract-level signal remains `had_error` (see open item below).
+0 failed**, ASan clean. The guard worked today because `tokenize_string` initialises the type to
+`token_error` and only changes it on success. **Follow-up 2026-11-27:** the guard now uses the
+contract-level signal directly — `if (!lexer.lex_tkn_list_struct->had_error) { tkn_list_add(...); }` —
+so a failed string can never reach `tkn_list_add` regardless of which token fields a future
+scanner changes. Verified: 54 tests, 0 failed; `'abc` still reports `error_pos = 0` with an empty
+list.
 
-**Remaining failure mechanism (2026-11-27):** on `'abc`, `error_reporting` correctly sets
+**Historical — failure mechanism before the guard (2026-11-27, CLOSED):** on `'abc`,
+`error_reporting` correctly sets
 `had_error = true`, `error_pos = 0`, `error_msg = "Unexpected character"` and prints the byte.
-The string dispatch arm then calls `tkn_list_add` unconditionally. That function's else branch is
+The string dispatch arm then called `tkn_list_add` unconditionally. That function's else branch is
 the *allocation-failure* path: it overwrites `error_pos` with `newToken.source_index` (1) and
 `error_msg` with the realloc label. No new flag is needed — reuse the step-3 EOF guard shape:
 push the string token only when `!had_error`. Then the lexical error survives, the list stays
@@ -206,14 +209,14 @@ empty, and the main loop exits via `had_error`.
 quote is consumed; the increment moved after it, and the stale comment moved with it. Verified:
 build clean, **41 tests, 1 failed** — the four valid-string tests are green. Scratch shows
 `'hello'` → `STRING pos=1 len=5`, `'hi'x` → `STRING pos=1 len=2` + `IDENT x`, `''` →
-`STRING pos=1 len=0`. The remaining failure is the unterminated case: `error_pos` is 1 because the
-dispatch arm still pushes on error and `tkn_list_add` overwrites it.
+`STRING pos=1 len=0`. At that point the remaining failure was the unterminated case: `error_pos`
+was 1 because the dispatch arm still pushed on error and `tkn_list_add` overwrote it.
 
 **Verified after the `source_index` fix (2026-11-27):** build clean; **41 tests, 5 failed**.
 The four valid-string failures are all length +2 (`'hello'` expected 5, got 7; `''` expected 0,
 got 2): the cursor is incremented before `token_length` is computed, and the subtraction uses
-`starting_offset_position` (0) instead of `source_index` (1). The unterminated test now fails at
-`error_pos` (expected 0, got 1) because the unguarded push reaches `tkn_list_add`'s else branch,
+`starting_offset_position` (0) instead of `source_index` (1). The unterminated test then failed at
+`error_pos` (expected 0, got 1) because the unguarded push reached `tkn_list_add`'s else branch,
 which overwrites the position with `newToken.source_index`. ASan reports leaks only because
 failing assertions abort before those tests free their lists.
 

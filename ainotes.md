@@ -40,6 +40,7 @@ This file is the **root**, and the only file you always read in full.
 | Tokenizer — ordered exercises and graduated hints | `tokenizer.md` |
 | `token_type_name` | `notes/42-token-type-name.md` |
 | `list_push` growth logic | `notes/43-list-push.md` |
+| Parser / AST / arena (Chapter 3) | `notes/44-parser-ast.md` |
 | Recall / learn C concepts (switch, loops, `realloc`, `static`) | `notes/50-concepts-c.md` |
 | Decide what to do next | `notes/60-open-items.md` |
 | Understand *why* something was decided (history, may be stale) | `notes/90-log.md` |
@@ -48,11 +49,12 @@ This file is the **root**, and the only file you always read in full.
 
 ### Current focus (2026-11-27)
 
-Chapter 2 (tokenizer) is complete — **48 tests, 0 failed**, `make all` clean, ASan/UBSan clean.
-Parts 1-10 of `current.md` are green: keywords, punctuation/operators, identifiers, numbers,
-strings, error contract, EOF span, robustness, `token_type_name` and the full-statement checkpoint.
-Next: Chapter 3 (parser / AST) at guide line 2664. Implementation details:
-[41-tokenizer-state](notes/41-tokenizer-state.md); next steps: [60-open-items](notes/60-open-items.md).
+Chapter 2 (tokenizer) is complete — **48 tests, 0 failed**. Chapter 3 has a **skeleton on disk**:
+AST types, arena allocator, parser contract, cursor helpers and error propagation; **54 tests,
+0 failed**, `make all` clean, ASan/UBSan clean. No grammar rule is implemented yet — `parse`
+currently reports `"… rule not implemented yet"` for a valid leading keyword. Next: the first
+failing test for `SELECT * FROM users;`. Details:
+[44-parser-ast](notes/44-parser-ast.md); tokenizer details: [41-tokenizer-state](notes/41-tokenizer-state.md).
 
 **Also open (debugging):** a DAP **"port error"** on the *second laptop* only. Root cause found
 (2026-10-17): a leftover `lua/plugins/dap-c.lua` defined a **second** `dap.adapters.codelldb`,
@@ -89,6 +91,7 @@ notes/
   41-tokenizer-state.md        what the code does now + open defects
   42-token-type-name.md        the 27-case type-name function
   43-list-push.md              the growth pattern
+  44-parser-ast.md             Chapter 3 skeleton: AST, arena, parser cursor
   50-concepts-c.md             C concepts asked about / learned
   60-open-items.md             next steps + pending cleanup
   90-log.md                    session history (append-only, historical)

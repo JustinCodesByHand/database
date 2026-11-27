@@ -961,3 +961,21 @@ this is exactly the no-default version. Remaining connection to pin: moving the 
 Learner answered "yes" to whether adding `TOKEN_BOOL` would still fail with a `default:` case.
 Named it plainly: no, `default:` suppresses `-Wswitch`; that is the whole reason the fallback is
 after the switch. Recorded in `notes/42`; re-check asks what value a new token would receive.
+
+### 2026-11-27 — string guard tightened; Chapter 3 skeleton on disk
+
+Learner flagged the old `error_pos`-overwrite bug. Verified on disk that the push was already
+guarded and `'abc` reported `error_pos = 0` (48 tests green); the guard used `token_type`, though,
+so it was changed to the contract-level signal `!had_error` before `tkn_list_add`. Re-verified:
+54 tests, 0 failed, scratch `'abc` unchanged. Updated `notes/41` so the historical failure entries
+read as closed rather than present tense.
+
+Then built the Chapter 3 skeleton on request: `src/util/arena.{h,c}` (aligned bump allocator,
+overflow-safe capacity check), `src/ast.h` (tagged union + lifetime chain), `src/parser.h`
+(`ParseError`, `parse`), `src/parser.c` (Parser cursor, `peek`/`advance`/`check`/`match`/`expect`,
+statement dispatch, tokenizer-error propagation), plus `tests/test_arena.c` and
+`tests/test_parser.c`. First build failed on `TokenType` — the repo enum is `tokentype`; fixed.
+No rule stubs were written: `-Werror=unused-function` rejects both unused definitions and
+declared-but-undefined statics, so rules arrive one at a time with their tests. `make fmt`,
+`make build/tests`, `make all` clean: **54 tests, 0 failed**, ASan/UBSan clean. Recorded in
+`notes/44`, routed in `ainotes.md`, updated `todo` and `notes/60`.
