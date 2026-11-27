@@ -795,3 +795,10 @@ scan, so it is a control-flow flag, not a condition true at every stable point. 
 the relationship at loop exit between the flag and the cursor: true means cursor on the closing
 quote, false means cursor on the NUL. Recorded in `notes/50`; next question bridges back to the
 span by asking which computed length stops at the content.
+
+### 2026-11-27 — span-length check landed
+
+After the flag/invariant distinction and the index table, learner answered that length 5 (not 6)
+stops `'hello'`'s span at the content. The invariant is now held as a usable rule: at loop exit
+the cursor is the exclusive content end, so `token_length` must be computed before consuming the
+closing quote. Next action is the code change in `tokenize_string` and a full-suite report.

@@ -59,6 +59,10 @@ cannot diagnose the bug. Only the promise "the span is exactly the token's conte
 excluded" rules out the second. Lesson: check invariants against *meaning*, not just against the
 formula used to compute the fields.
 
+**Check landed (2026-11-27):** asked which length — 5 or 6 — makes the span stop at the content;
+learner answered 5. The distinction is now held: the cursor's position at loop exit is the
+exclusive end of the content span, and the increment belongs after the span is recorded.
+
 ## Types
 
 7. **Unsigned fields cannot hold sentinels.** `token_length = -1` becomes `SIZE_MAX`
