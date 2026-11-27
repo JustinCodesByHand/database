@@ -860,3 +860,10 @@ the lexical error is reported correctly at detection, then the unguarded string 
 `tkn_list_add`'s allocation-failure branch, which overwrites `error_pos` (0 → 1) and the message.
 Connected the fix to the EOF guard he already wrote in step 3 — same `!had_error` shape, no new
 state. Recorded in `notes/41`; ended with a request to apply the guard and report the suite.
+
+### 2026-11-27 — confirmed the guard question
+
+Learner restated the fix as "check `had_error` in the dispatch and use it to guard the push."
+Confirmed, with the timing detail: the check must come *after* `tokenize_string` returns, because
+that call is what sets the flag on an unterminated string; checking before it is always false.
+Same shape as the step-3 EOF guard.
