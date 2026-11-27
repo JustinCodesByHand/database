@@ -161,6 +161,7 @@ These are independent and easy to conflate:
 | C `char` literal | `'"'` | the single byte `0x22` (quotation mark) |
 | C string literal | `"'hello'"` | seven bytes: `' h e l l o '` — outer `"` are C delimiters, inner `'` are payload |
 | MiniDB SQL input | `'hello'` | one STRING token; the grammar's delimiter is `0x27` |
+| LLDB variable display | `const char * = "'hello'"` | the outer `"` are **debugger rendering**, not stored bytes |
 
 MiniDB's syntax uses **single quotes** because the guide's tests do. `'"'` in the scanner would
 mean the SQL grammar uses double quotes, which this chapter does not define. `'\''` is not a
