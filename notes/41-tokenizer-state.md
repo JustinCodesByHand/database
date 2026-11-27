@@ -171,7 +171,9 @@ already at the NUL, that pushes it past the string and ASan reports a global-buf
 and added the field assignments. Partly right: the increment is conditional and the
 `token_string` pointer targets content (`input + opening + 1`). Three defects remain: (1)
 `source_index` was assigned a `const char *` instead of `starting_offset_position + 1` — the
-build fails with `-Wint-conversion`; (2) `token_length` is computed *after* the increment and
+build fails with `-Wint-conversion`; (1b) next attempt assigned the **byte**
+`lexer->input_string[starting_offset_position]` (`'` = 39) instead of the index — compiler now
+reports `-Werror=sign-conversion`; (2) `token_length` is computed *after* the increment and
 subtracts `starting_offset_position`, so for `'hello'` it yields 7 instead of 5; (3) the stale
 comment still describes an unconditional increment. The dispatch arm also still pushes the
 string token unconditionally on error, letting `tkn_list_add` overwrite `error_pos`/`error_msg`.

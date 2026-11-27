@@ -820,3 +820,11 @@ now inside the success branch and `token_string` targets the content — both ri
 the increment and against the opening offset (7 for `'hello'` instead of 5), and a stale comment.
 The dispatch arm still pushes on error. Recorded in `notes/41`; next nudge is to fix `source_index`
 first and read the next compiler error.
+
+### 2026-11-27 — second `source_index` attempt checked
+
+Learner replaced the pointer with `lexer->input_string[starting_offset_position]` — the byte at
+the opening quote (`'` = 39), not the byte's index. Build moved from `-Wint-conversion` to
+`-Werror=sign-conversion`; still red. The distinction to install: `source_index` is a `size_t`
+offset into the source, while `input_string[i]` is what lives at that offset. Recorded in
+`notes/41`; nudge asks which expression yields the index of the first content byte.
