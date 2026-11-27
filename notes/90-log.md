@@ -698,3 +698,7 @@ in the arm and never used. On disk the helper initializes only `token_type` and 
 never assigns `offset_position` / `word_length`, never calls `error_reporting`, and its loop
 checks `peek() == '\''` starting at the opening quote. Guided by questions only, per learner
 request.
+
+**Step 4 diagnosis:** learner correctly identified that `tokenize_string`'s first loop iteration
+matches the *opening* quote, so `closing_quote` becomes true immediately and the cursor never
+moves. Next nudge: what must happen before the loop so the first `peek()` sees content?
