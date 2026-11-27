@@ -702,3 +702,13 @@ request.
 **Step 4 diagnosis:** learner correctly identified that `tokenize_string`'s first loop iteration
 matches the *opening* quote, so `closing_quote` becomes true immediately and the cursor never
 moves. Next nudge: what must happen before the loop so the first `peek()` sees content?
+
+### Neovim debugger "not working" — diagnosed (same session)
+
+Checked the DAP setup itself: `dap.core` import present, headless `dap.adapters.codelldb` is
+`type = "server"` with `port = "${port}"` and mason codelldb executable, and all three
+`minidb:` configs are registered. So the config is not the problem. The blocker is upstream:
+`make build/tests` fails on the learner's in-progress `string_token` unused-variable error, and
+`lua/plugins/dap.lua`'s `program()` rebuilds with `make -C <root> build/tests` before launching.
+A stray `~/.config/nvim/dap.lua` also exists, but headless inspection shows it is not winning
+the adapter race on this machine.
