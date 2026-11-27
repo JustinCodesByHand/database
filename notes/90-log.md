@@ -787,3 +787,11 @@ indices for `'hello'` (0 quote, 1-5 content, 6 quote, 7 NUL): computing the leng
 gives span `[1,6)` = `hello`; incrementing first gives `[1,7)` = `hello'`. The violated promise
 is that the span is exactly the token's content, delimiters excluded. Filed in `notes/50`; next
 question asks which span includes a quote byte.
+
+### 2026-11-27 — "is the invariant the closing quote flag?"
+
+No — and the confusion is diagnostic. `closing_quote` is a local bool that changes during the
+scan, so it is a control-flow flag, not a condition true at every stable point. The invariant is
+the relationship at loop exit between the flag and the cursor: true means cursor on the closing
+quote, false means cursor on the NUL. Recorded in `notes/50`; next question bridges back to the
+span by asking which computed length stops at the content.

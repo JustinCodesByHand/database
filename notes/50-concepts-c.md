@@ -45,6 +45,12 @@ happened to be true for `"SELECT"` — input ended right after the word. It is a
 a promise: `"SELECT * FROM users"` broke it. An invariant is something you can *count on* at
 every stable point, not something that happened to match once.
 
+**Misconception caught 2026-11-27:** learner asked "is the invariant the closing-quote flag?"
+No. `closing_quote` is a **control-flow variable**: it starts false and flips to true, so it
+does not hold at every stable point. The invariant is the *relationship* at loop exit:
+`closing_quote == true` ⇔ cursor is on the closing quote; `false` ⇔ cursor is on the NUL. A flag
+records which case you're in; an invariant is the promise tying that case to the state.
+
 **Concrete repair when this felt abstract (2026-11-27):** for `'hello'`, indices are
 `0='`, `1..5=hello`, `6='`, `7=NUL`. After the scan loop the cursor is on 6 and `source_index=1`.
 Computing `token_length = 6 - 1 = 5` gives the span `[1,6)` = `hello`; incrementing first gives
