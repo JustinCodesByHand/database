@@ -724,3 +724,11 @@ shows `ERROR pos=0 len=0`, `ERROR pos=0 len=0`, `EOF pos=7`, `had_error = false`
 leaves the cursor on the closing quote, causing a second trip through the quote arm, and its
 `Token` fields (`token_type`, `offset_position`, `word_length`, `input_string`) are still the
 initial ones. Unterminated input never calls `error_reporting`, hence `had_error` false.
+
+### Step 4 review: infinite loop
+
+Learner changed the scan loop to `while (!is_at_end(lexer) && peek(lexer) != '\'')` with an
+`if (peek == '\'') closing_quote = true;` body and no cursor increment; added `error_reporting`
+on the failure branch and `TOKEN_STRING` on success. Build clean, but the suite **hangs**:
+`script -qec 'timeout 8 ./build/tests' /dev/null` gives exit 124 and no buffered output. The
+loop condition excludes the very byte the body tests for, and nothing advances the cursor.
