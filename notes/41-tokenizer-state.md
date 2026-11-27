@@ -2,7 +2,14 @@
 
 Part of the [notes tree](../ainotes.md). Read before working on the tokenizer.
 
-## Status (verified on disk 2026-10-25, branch `main`)
+## Current status (2026-11-27)
+
+Chapter 2 is complete: **48 tests, 0 failed**, `make all` clean, ASan/UBSan clean. Parts 1-10 of
+`current.md` are green, including the full-statement checkpoint, grammar-free input, 10,000-token
+stress, `token_type_name`, empty/unterminated strings and all error paths. The parser (Chapter 3)
+is next. OOM is reasoned about and reported at the source, not deterministically triggered.
+
+## Historical status (verified on disk 2026-10-25, branch `main`)
 
 **Build is green. 12 tests, 0 failed.**
 
@@ -46,15 +53,15 @@ by the `static const keyword KEYWORDS[]` table + one loop in `tokenize_word` (le
 1. ~~Only `"select"` is a keyword~~ **CLOSED (2026-10-25):** all 11 keywords live in the
    `static const` table (`7165518`); the `strlen(input_string)` span bug found in review was
    fixed (`word_length`) and guarded by `select_from_users_full_statement`.
-2. **`list_push`'s return value is ignored** every time it is called in `tokenize` (both the
-   word push and the `*` push). A grow failure is not seen. (The EOF push *does* check it.)
-3. **`grow_list_capisity` returns `void`.** Failure travels as a side effect (`had_error`)
-   rather than a return value.
-4. **`had_error` is sticky and overloaded.** Once true, `list_push` returns `false` for every
-   later push. It is also the struct's *general* error flag (paired with
-   `error_msg`/`error_pos`), so a caller cannot distinguish "malformed SQL" from "out of
-   memory". Still an open design decision.
-5. **`token_type_name` is not implemented.** Declaration commented out in the header. See
+2. ~~**`list_push`'s return value is ignored.**~~ **CLOSED 2026-11-27:** OOM is now reported at
+   the source in `tkn_list_add`; `had_error` stops the loop, so callers need not inspect the
+   return.
+3. ~~**`grow_list_capisity` returns `void`.**~~ **CLOSED 2026-11-27:** returns `bool`; the
+   `new_mem_address` temp-var pattern is preserved.
+4. ~~**`had_error` is sticky and overloaded.**~~ **CLOSED 2026-11-27:** `error_msg` distinguishes
+   `"Unexpected character"` from `"out of memory"`; `error_pos` is the offending byte for
+   lexical errors and the token's `source_index` for OOM.
+5. ~~**`token_type_name` is not implemented.**~~ **CLOSED 2026-11-27:** see
    [42-token-type-name](42-token-type-name.md).
 6. ~~**EOF token fields are inconsistent.**~~ **CLOSED 2026-11-27:** the EOF initializer now uses
    `lexer.input_string + lexer.cursor_position` for `token_string`, with `token_length = 0` and

@@ -2,29 +2,15 @@
 
 Part of the [notes tree](../ainotes.md). Read this to decide what to do next.
 
-## Do next (Chapter 2 — tokenizer, in order)
+## Do next
 
-- [x] **Prefix-match bug** — fixed and committed (length check in `tokenize_word`).
-- [x] **`*` → `TOKEN_STAR`** — done; `star_input_is_star_then_eof` passes.
-- [x] **Hang on unrecognised characters** — gone (they are consumed and skipped; see
-  [41-tokenizer-state](41-tokenizer-state.md) defect 7).
-- [ ] **Keyword table.** Only `"select"` is a keyword; add the other **10**
-  (`FROM, WHERE, INSERT, INTO, VALUES, CREATE, TABLE, DELETE, UPDATE, SET`) as a `static const`
-  table in `tokenizer.c` (not the header), matched with `strncasecmp` **plus** the length
-  check. Test case-insensitivity (`select`, `SeLeCt`).
-- [ ] **Make punctuation/operators real tokens:** `,` `;` `(` `)` first, then `=` `!=` `<`
-  `<=` `>` `>=`. Today they are *silently dropped* (defect 7) — which also means
-  `SELECT * FROM users;` parses `;` as nothing. Generalise the hand-rolled `*` branch
-  (defect 8) into a small `switch`/table on `peek`.
-- [ ] **Numbers and strings** (quotes excluded; unterminated string → `had_error`).
-- [ ] **Implement `token_type_name`** from `tests/scratch.c` (see
-  [42-token-type-name](42-token-type-name.md)) — recoverable, no rewrite.
+**Chapter 2 is complete (2026-11-27): 48 tests, 0 failed.** Everything below was once on this
+list and is now closed: prefix-match bug, `*`, all 11 keywords, punctuation/operators, numbers,
+strings, the error contract, EOF span, `token_type_name`, `token_list_free(NULL)`, the 10,000-token
+stress test, full-statement checkpoint and grammar-free input. Details:
+[41-tokenizer-state](41-tokenizer-state.md) and [42-token-type-name](42-token-type-name.md).
 
-Other checklist tests from the guide (~line 2610): position checks (`"SELECT * FROM users"`)
-— note `FROM` should become `TOKEN_FROM` once the keyword table lands; prefix cases
-`"selection"`/`"SEL"`/`"SE"`/`"S"` → `TOKEN_IDENT`; `"SELECT@"` → error naming the character;
-identifiers with digits/underscores (`user_id2`) but not starting with a digit;
-`token_list_free(NULL)` safe; 10,000-token stress input.
+Next: **Chapter 3 (parser / AST)** at `src/minidb-c-guide.md:2664`.
 
 ## Open design decisions (decide before the parser grows)
 

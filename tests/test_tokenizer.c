@@ -605,6 +605,117 @@ static void bad_byte_stops_scan_before_trailing_input(void) {
   token_list_free(l);
 }
 
+/* Part 8 — C defines free(NULL) as a no-op; token_list_free guards it too. */
+static void token_list_free_null_is_safe(void) { token_list_free(NULL); }
+
+/* Part 8 — fourteen realloc doublings, checked under ASan/UBSan. */
+static void ten_thousand_tokens_stress(void) {
+  const size_t token_count = 10000;
+  const size_t input_len = token_count * 2;
+  char *input = malloc(input_len + 1);
+  ASSERT_NOT_NULL(input);
+
+  for (size_t i = 0; i < token_count; i++) {
+    input[2 * i] = 'a';
+    input[2 * i + 1] = ' ';
+  }
+  input[input_len] = '\0';
+
+  TokenList *l = tokenize(input);
+  ASSERT_NOT_NULL(l);
+  ASSERT(!l->had_error);
+  ASSERT_EQ_INT(token_count + 1, l->total_num_tkns);
+
+  for (size_t i = 0; i < token_count; i++) {
+    ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[i].token_type);
+    ASSERT_EQ_INT(2 * i, l->token_list_buffer[i].source_index);
+    ASSERT_EQ_INT(1, l->token_list_buffer[i].token_length);
+  }
+
+  const size_t eof = token_count;
+  ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[eof].token_type);
+  ASSERT_EQ_INT(input_len, l->token_list_buffer[eof].source_index);
+  ASSERT_EQ_INT(0, l->token_list_buffer[eof].token_length);
+  ASSERT(l->token_list_buffer[eof].token_string == input + input_len);
+
+  token_list_free(l);
+  free(input);
+}
+
+/* Part 9 — names come from the enum, with a fallback for bogus values. */
+static void token_type_name_maps_known_and_unknown(void) {
+  ASSERT_EQ_STR("SELECT", token_type_name(TOKEN_SELECT));
+  ASSERT_EQ_STR("EOF", token_type_name(TOKEN_EOF));
+  ASSERT_EQ_STR("UNKNOWN", token_type_name((tokentype)999));
+}
+
+/* Guide checklist — case-insensitive keywords beyond the FROM variant. */
+static void select_case_variants_are_select(void) {
+  const char *inputs[] = {"select", "SELECT", "SeLeCt"};
+  for (size_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
+    TokenList *l = tokenize_with(inputs[i]);
+    ASSERT_NOT_NULL(l);
+    ASSERT_EQ_INT(2, l->total_num_tkns);
+    ASSERT_EQ_INT(TOKEN_SELECT, l->token_list_buffer[0].token_type);
+    ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
+    token_list_free(l);
+  }
+}
+
+/* Guide "Done when" — every error case has a usable position, incl. lone `!`.
+ */
+static void lone_bang_reports_error(void) {
+  TokenList *l = tokenize_with("a ! b");
+  ASSERT_NOT_NULL(l);
+  ASSERT(l->had_error);
+  ASSERT_EQ_INT(2, l->error_pos);
+  ASSERT_EQ_INT(1, l->total_num_tkns);
+  ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
+  token_list_free(l);
+}
+
+/* Part 10 — the chapter's one full statement, with exact spans. */
+static void full_statement_ten_exact_tokens(void) {
+  TokenList *l = tokenize_with("SELECT * FROM users WHERE id = 3;");
+  ASSERT_NOT_NULL(l);
+  ASSERT(!l->had_error);
+  ASSERT_EQ_INT(10, l->total_num_tkns);
+
+  static const tokentype types[] = {
+      TOKEN_SELECT, TOKEN_STAR, TOKEN_FROM,   TOKEN_IDENT,     TOKEN_WHERE,
+      TOKEN_IDENT,  TOKEN_EQ,   TOKEN_NUMBER, TOKEN_SEMICOLON, TOKEN_EOF,
+  };
+  static const size_t positions[] = {0, 7, 9, 14, 20, 26, 29, 31, 32, 33};
+  static const size_t lengths[] = {6, 1, 4, 5, 5, 2, 1, 1, 1, 0};
+
+  for (size_t i = 0; i < sizeof(types) / sizeof(types[0]); i++) {
+    ASSERT_EQ_INT(types[i], l->token_list_buffer[i].token_type);
+    ASSERT_EQ_INT(positions[i], l->token_list_buffer[i].source_index);
+    ASSERT_EQ_INT(lengths[i], l->token_list_buffer[i].token_length);
+  }
+  token_list_free(l);
+}
+
+/* Part 10 — spelling only; no grammar checks in the lexer. */
+static void grammar_free_from_select_commas(void) {
+  TokenList *l = tokenize_with("FROM SELECT , , ;");
+  ASSERT_NOT_NULL(l);
+  ASSERT(!l->had_error);
+  ASSERT_EQ_INT(6, l->total_num_tkns);
+
+  static const tokentype types[] = {TOKEN_FROM,  TOKEN_SELECT,    TOKEN_COMMA,
+                                    TOKEN_COMMA, TOKEN_SEMICOLON, TOKEN_EOF};
+  static const size_t positions[] = {0, 5, 12, 14, 16, 17};
+  static const size_t lengths[] = {4, 6, 1, 1, 1, 0};
+
+  for (size_t i = 0; i < sizeof(types) / sizeof(types[0]); i++) {
+    ASSERT_EQ_INT(types[i], l->token_list_buffer[i].token_type);
+    ASSERT_EQ_INT(positions[i], l->token_list_buffer[i].source_index);
+    ASSERT_EQ_INT(lengths[i], l->token_list_buffer[i].token_length);
+  }
+  token_list_free(l);
+}
+
 void suite_tokenizer(void) {
   SUITE("tokenizer");
   RUN_TEST(empty_input_is_single_eof);
@@ -659,4 +770,17 @@ void suite_tokenizer(void) {
   RUN_TEST(bad_byte_truncates_after_valid_token);
   RUN_TEST(bad_byte_at_start_gives_empty_list);
   RUN_TEST(bad_byte_stops_scan_before_trailing_input);
+  RUN_TEST(lone_bang_reports_error);
+
+  /* Part 8 - list robustness */
+  RUN_TEST(token_list_free_null_is_safe);
+  RUN_TEST(ten_thousand_tokens_stress);
+
+  /* Part 9 - token type names */
+  RUN_TEST(token_type_name_maps_known_and_unknown);
+
+  /* Guide checklist + Part 10 - end of chapter */
+  RUN_TEST(select_case_variants_are_select);
+  RUN_TEST(full_statement_ten_exact_tokens);
+  RUN_TEST(grammar_free_from_select_commas);
 }

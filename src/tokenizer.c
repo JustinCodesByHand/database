@@ -31,9 +31,8 @@ static bool is_at_end(const Lexer *lexer) {
 
 // init OR grow the list capasity
 // factor out the conditional logic for instanciation, size extention, else
-static void grow_list_capisity(TokenList *tkn_list_struct) {
+static bool grow_list_capisity(TokenList *tkn_list_struct) {
   // guard against 0,0 case when doubling memory size
-  //
   size_t new_capasity;
 
   if (tkn_list_struct->tknlst_capacity == 0) {
@@ -45,12 +44,12 @@ static void grow_list_capisity(TokenList *tkn_list_struct) {
   size_t new_mem_size = sizeof(Token) * new_capasity;
   Token *new_mem_address =
       (Token *)realloc(tkn_list_struct->token_list_buffer, new_mem_size);
-  if (new_mem_address != NULL) {
-    tkn_list_struct->token_list_buffer = new_mem_address;
-    tkn_list_struct->tknlst_capacity = new_capasity;
-  } else {
-    tkn_list_struct->had_error = true;
+  if (new_mem_address == NULL) {
+    return false;
   }
+  tkn_list_struct->token_list_buffer = new_mem_address;
+  tkn_list_struct->tknlst_capacity = new_capasity;
+  return true;
 }
 
 // Helper for list_push
@@ -71,23 +70,19 @@ static void addToStruct(TokenList *tkn_list_struct, Token newToken) {
 // realloc memory if list grows to bigggg
 //  transfers data from new token to tokenlist
 static bool tkn_list_add(TokenList *tkn_list_struct, Token newToken) {
-
-  if (tkn_list_struct->tknlst_capacity == tkn_list_struct->total_num_tkns) {
-    grow_list_capisity(tkn_list_struct);
-  }
-
-  if (!tkn_list_struct->had_error) {
-    tkn_list_struct->total_num_tkns += 1;
-    addToStruct(tkn_list_struct, newToken);
-    return true;
-  } else {
-    newToken.token_type = token_error;
+  if (tkn_list_struct->tknlst_capacity == tkn_list_struct->total_num_tkns &&
+      !grow_list_capisity(tkn_list_struct)) {
     tkn_list_struct->had_error = true;
     tkn_list_struct->error_pos = newToken.source_index;
-    tkn_list_struct->error_msg =
-        "grow_list_capisity threw an error, it uses malloc and realloc";
+    tkn_list_struct->error_msg = "out of memory";
+    fprintf(stderr, "tokenizer: out of memory at position %zu\n",
+            newToken.source_index);
     return false;
   }
+
+  tkn_list_struct->total_num_tkns += 1;
+  addToStruct(tkn_list_struct, newToken);
+  return true;
 }
 
 // Tokenlist Helper
@@ -97,6 +92,68 @@ void token_list_free(TokenList *tkn_list_struct) {
     free(tkn_list_struct->token_list_buffer);
     free(tkn_list_struct);
   }
+}
+
+/* Enum spellings, not SQL symbols; no `default:` so -Wswitch catches a new
+ * tokentype added without a name. */
+const char *token_type_name(tokentype type) {
+  switch (type) {
+  case TOKEN_SELECT:
+    return "SELECT";
+  case TOKEN_FROM:
+    return "FROM";
+  case TOKEN_WHERE:
+    return "WHERE";
+  case TOKEN_INSERT:
+    return "INSERT";
+  case TOKEN_INTO:
+    return "INTO";
+  case TOKEN_VALUES:
+    return "VALUES";
+  case TOKEN_CREATE:
+    return "CREATE";
+  case TOKEN_TABLE:
+    return "TABLE";
+  case TOKEN_DELETE:
+    return "DELETE";
+  case TOKEN_UPDATE:
+    return "UPDATE";
+  case TOKEN_SET:
+    return "SET";
+  case TOKEN_STAR:
+    return "STAR";
+  case TOKEN_COMMA:
+    return "COMMA";
+  case TOKEN_SEMICOLON:
+    return "SEMICOLON";
+  case TOKEN_LPAREN:
+    return "LPAREN";
+  case TOKEN_RPAREN:
+    return "RPAREN";
+  case TOKEN_EQ:
+    return "EQ";
+  case TOKEN_NEQ:
+    return "NEQ";
+  case TOKEN_LT:
+    return "LT";
+  case TOKEN_LTE:
+    return "LTE";
+  case TOKEN_GT:
+    return "GT";
+  case TOKEN_GTE:
+    return "GTE";
+  case TOKEN_NUMBER:
+    return "NUMBER";
+  case TOKEN_STRING:
+    return "STRING";
+  case TOKEN_IDENT:
+    return "IDENT";
+  case TOKEN_EOF:
+    return "EOF";
+  case token_error:
+    return "ERROR";
+  }
+  return "UNKNOWN";
 }
 
 typedef struct {

@@ -16,9 +16,10 @@ capacity = new_capacity;
 /* then copy the token's fields */
 ```
 
-The implementation satisfies "grow logic lives in one function"
-(`grow_list_capisity`), but that function returns `void`, so it reports failure only via the
-`had_error` side effect (see [41-tokenizer-state](41-tokenizer-state.md) defects 3–5).
+Fixed 2026-11-27: `grow_list_capisity` returns `bool`, and `tkn_list_add` reports OOM at the
+detection site (`error_msg = "out of memory"`, `error_pos` at the token being pushed, one stderr
+line) and returns `false`. Callers need not check the return: `had_error` stops the main loop.
+Allocation failure is reasoned about, not deterministically triggered in a test.
 
 ## `list_push` copies verbatim
 

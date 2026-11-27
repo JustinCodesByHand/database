@@ -3,7 +3,7 @@
 **Purpose:** handoff notes for AI-assisted sessions on MiniDB, split into a tree so a
 session reads only what its task needs instead of the whole log.
 
-**Last updated:** 2026-10-26
+**Last updated:** 2026-11-27
 **Working directory:** `/home/jcmac/code/database`
 
 ---
@@ -46,13 +46,13 @@ This file is the **root**, and the only file you always read in full.
 
 **Most sessions:** start with `notes/60-open-items.md`, then the one topic file it points at.
 
-### Current focus (2026-10-26)
+### Current focus (2026-11-27)
 
-Chapter 2 (tokenizer). Build is green — **12 tests, 0 failed** (working branch is `main`).
-All 11 keywords tokenize via the table; multi-word statements are verified. Next: follow the
-ordered exercise path in [tokenizer.md](tokenizer.md), starting with punctuation/operators.
-Implementation details: [41-tokenizer-state](notes/41-tokenizer-state.md); next steps:
-[60-open-items](notes/60-open-items.md).
+Chapter 2 (tokenizer) is complete — **48 tests, 0 failed**, `make all` clean, ASan/UBSan clean.
+Parts 1-10 of `current.md` are green: keywords, punctuation/operators, identifiers, numbers,
+strings, error contract, EOF span, robustness, `token_type_name` and the full-statement checkpoint.
+Next: Chapter 3 (parser / AST) at guide line 2664. Implementation details:
+[41-tokenizer-state](notes/41-tokenizer-state.md); next steps: [60-open-items](notes/60-open-items.md).
 
 **Also open (debugging):** a DAP **"port error"** on the *second laptop* only. Root cause found
 (2026-10-17): a leftover `lua/plugins/dap-c.lua` defined a **second** `dap.adapters.codelldb`,

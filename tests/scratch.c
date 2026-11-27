@@ -17,72 +17,6 @@
 
 #define DEFAULT_INPUT "SELECT"
 
-/* TEMPORARY. token_type_name() was declared in tokenizer.h but is not defined
- * anywhere, so this file cannot call it yet. Delete this function the moment
- * you implement token_type_name() and call that instead -- it is the same job,
- * and the real one has no default: on purpose, so a new tokentype becomes a
- * build error instead of a silent "?". */
-static const char *scratch_type_name(tokentype type) {
-  switch (type) {
-  case TOKEN_SELECT:
-    return "SELECT";
-  case TOKEN_FROM:
-    return "FROM";
-  case TOKEN_WHERE:
-    return "WHERE";
-  case TOKEN_INSERT:
-    return "INSERT";
-  case TOKEN_INTO:
-    return "INTO";
-  case TOKEN_VALUES:
-    return "VALUES";
-  case TOKEN_CREATE:
-    return "CREATE";
-  case TOKEN_TABLE:
-    return "TABLE";
-  case TOKEN_DELETE:
-    return "DELETE";
-  case TOKEN_UPDATE:
-    return "UPDATE";
-  case TOKEN_SET:
-    return "SET";
-  case TOKEN_STAR:
-    return "STAR";
-  case TOKEN_COMMA:
-    return "COMMA";
-  case TOKEN_SEMICOLON:
-    return "SEMICOLON";
-  case TOKEN_LPAREN:
-    return "LPAREN";
-  case TOKEN_RPAREN:
-    return "RPAREN";
-  case TOKEN_EQ:
-    return "EQ";
-  case TOKEN_NEQ:
-    return "NEQ";
-  case TOKEN_LT:
-    return "LT";
-  case TOKEN_LTE:
-    return "LTE";
-  case TOKEN_GT:
-    return "GT";
-  case TOKEN_GTE:
-    return "GTE";
-  case TOKEN_NUMBER:
-    return "NUMBER";
-  case TOKEN_STRING:
-    return "STRING";
-  case TOKEN_IDENT:
-    return "IDENT";
-  case TOKEN_EOF:
-    return "EOF";
-  case token_error:
-    return "ERROR";
-  default:
-    return "UNKNOWN";
-  }
-}
-
 int main(int argc, char **argv) {
   const char *input = (argc > 1) ? argv[1] : DEFAULT_INPUT;
 
@@ -109,7 +43,7 @@ int main(int argc, char **argv) {
   for (size_t i = 0; i < list->total_num_tkns; i++) {
     const Token *t = &list->token_list_buffer[i];
     printf("  [%zu] %-9s pos=%-3zu len=%-3zu text=\"%.*s\"\n", i,
-           scratch_type_name(t->token_type), t->source_index, t->token_length,
+           token_type_name(t->token_type), t->source_index, t->token_length,
            (int)t->token_length, /* %.*s wants int; token_length is size_t */
            t->token_string);
   }

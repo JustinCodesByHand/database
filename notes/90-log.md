@@ -928,3 +928,17 @@ stress, and honest OOM reasoning.
 Asked whether `token_list_free(NULL)` is safe; learner guessed "probably not safe" without
 reading. Checked `src/tokenizer.c:95`: explicit `if (tkn_list_struct != NULL)` guard plus C's
 `free(NULL)` no-op make it safe. Recorded in `notes/41`; next step is the test that pins it.
+
+### 2026-11-27 — Chapter 2 finished
+
+Learner asked to finish the rest of the tokenizer and move to Chapter 3. Added seven tests:
+`token_list_free(NULL)`, 10,000-token stress (10,001 tokens, exact spans, ASan clean),
+`token_type_name` (SELECT/EOF/bogus), case-insensitive SELECT variants, lone `!` error, the
+ten-token checkpoint `"SELECT * FROM users WHERE id = 3;"`, and grammar-free
+`"FROM SELECT , , ;"`. Implemented `token_type_name` in `tokenizer.c` with all 27 enum cases,
+no `default:` (so `-Wswitch` catches omissions), fallback `"UNKNOWN"`; deleted the scratch copy
+and made scratch call the real function. Changed `grow_list_capisity` to return `bool` and made
+`tkn_list_add` report OOM at the detection site with a static label and one stderr line — reasoned
+about, not deterministically triggered. `make fmt`, `make test`, `make all` and scratch all clean:
+**48 tests, 0 failed**. Updated `todo`, `current.md`, `ainotes.md`, `notes/41`, `notes/42`,
+`notes/43` and `notes/60`; committed code + tests + notes together.

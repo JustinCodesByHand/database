@@ -422,7 +422,9 @@ The stress test is the one that catches dynamic-array bugs: the capacity goes 1,
 16384 — fourteen `realloc`s. If any write lands outside the current allocation, ASan stops
 you at the exact line.
 
-**Checkpoint:** four robustness tests green; no leak from any path.
+**Checkpoint reached 2026-11-27:** `token_list_free(NULL)`, 10,000-token stress (10,001 tokens,
+exact spans, ASan clean), EOF span, and lone `!` are green. OOM now reports at the source with a
+static label and one stderr line; it is reasoned about, not deterministically triggered.
 
 ## Part 9 — `token_type_name`
 
@@ -449,8 +451,9 @@ fallback.
 and an invalid value if a fallback exists. Use `ASSERT_EQ_STR`: this function returns
 NUL-terminated string literals, unlike token spans.
 
-**Checkpoint:** builds clean with the strict flags; scratch output unchanged in meaning; no
-duplicate switch left in `tests/scratch.c`. See `notes/42-token-type-name.md`.
+**Checkpoint reached 2026-11-27:** builds clean with the strict flags; scratch calls the real
+function; no duplicate switch left in `tests/scratch.c`. Enum spellings chosen. See
+`notes/42-token-type-name.md`.
 
 ## Part 10 — the end-of-chapter checkpoint
 
@@ -485,6 +488,9 @@ is trying to be a parser — delete the check.
   lone `!`);
 - `tokenize` knows spelling only, never grammar — the `FROM SELECT` test above;
 - no leaks: every `tokenize` in a test has a matching `token_list_free`, ASan clean.
+
+**Part 10 DONE 2026-11-27:** full statement tokenizes to the ten exact spans above; grammar-free
+`"FROM SELECT , , ;"` produces six tokens with no error. **48 tests, 0 failed.**
 
 **Final ritual:** run the **whole** suite (`make test`), not just the newest test; update
 `todo`, `notes/41-tokenizer-state.md`, `notes/60-open-items.md`, and append a dated

@@ -66,10 +66,8 @@ void token_list_free(TokenList *tkn_list_struct);
  * also conflict: non-static declaration following a static definition is an
  * error. */
 
-// Disabled while the `tokentype` rename settles. Restore both this
-// declaration AND
-// its definition in tokenizer.c (git: branch dev, commit 0efae80) — nothing may
-// call token_type_name until both exist, or it fails at link time. const char
-// *token_type_name(tokentype type); /* for error messages and tests */
+/* Names are enum spellings ("TOKEN_STAR"), not SQL display symbols. A bogus
+ * (tokentype) value falls through to "UNKNOWN". */
+const char *token_type_name(tokentype type);
 
 #endif

@@ -1,9 +1,10 @@
 # TODO — MiniDB
 
-Updated: 2026-11-26 · branch `main` (in sync with `origin/main`)
+Updated: 2026-11-27 · branch `main` (in sync with `origin/main`)
 Full detail lives in `notes/` (start at `ainotes.md`). This file is the short, actionable list;
 the ordered, checkpoint-by-checkpoint tokenizer path is in `current.md` (Parts 1-5 done, 6-10
-expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **41 tests, 0 failed**.
+expanded 2026-11-26; Parts 1-10 now complete); `tokenizer.md` holds the graduated hint bank.
+Disk: **48 tests, 0 failed**, ASan/UBSan clean.
 
 ## Bugs to fix
 
@@ -15,18 +16,14 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **41 t
       machine is verified clean.
 - [x] **`tokenize_string` overran the source on unterminated input** — fixed 2026-11-27: the
       increment is inside the `closing_quote` branch, so the NUL exit leaves the cursor alone.
-- [ ] **Tokenizer still silently drops truly unknown chars** (`@`, lone `!`, …). Punctuation,
-      operators and digits are now real tokens; the stopgap `default:` remains for the rest.
-      Part 7 of `current.md` owns the error contract. `notes/41` defect 7.
-- [ ] **`tokenize` ignores `list_push`'s return value** (the word push *and* the `*` push). A
-      grow failure goes unnoticed. defect 2.
-- [ ] **`grow_list_capisity` returns `void`**; failure surfaces only through the sticky
-      `had_error` side effect. defect 3.
-- [ ] **`had_error` is overloaded + sticky** — cannot distinguish "malformed SQL" from "out of
-      memory". defect 4.
-- [ ] **`token_type_name` is not implemented** (header declaration commented out). The 27-case
-      body is recoverable from `tests/scratch.c` (`scratch_type_name`).
-      `notes/42-token-type-name.md`.
+- [x] **Unknown chars now report errors** (`@`, lone `!`, …): `default:` and the lone-`!` else
+      call `error_reporting`; `lone_bang_reports_error` pins the position. `notes/41` defect 7.
+- [x] **`grow_list_capisity` returns `bool` and `tkn_list_add` reports OOM at the source**
+      (error_msg `"out of memory"`, error_pos at the token being pushed, one stderr line).
+      Callers can ignore the return because `had_error` stops the main loop. defects 2/3/4.
+      OOM itself is reasoned about, not deterministically tested — see `notes/41`.
+- [x] **`token_type_name` implemented 2026-11-27:** 27 enum cases, no `default:` (so `-Wswitch`
+      catches a new enumerator), fallback `"UNKNOWN"` after the switch; scratch copy deleted.
 - [x] **EOF token fields fixed 2026-11-27:** `token_string = lexer.input_string +
       lexer.cursor_position`, `token_length = 0`, `source_index = lexer.cursor_position`;
       test-first assertion in `select_input_is_select_then_eof`. defect 6 closed.
@@ -40,18 +37,14 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **41 t
 - [x] **Part 6 — strings DONE 2026-11-27:** quote-excluded span, interior whitespace, empty
       string, trailing bytes, unterminated error — all green. `current.md` Part 6 has the spans.
 - [x] **Part 7 — errors DONE 2026-11-27:** partial list + `had_error`, stderr line at detection,
-      no EOF on error, `error_pos` preserved. `SELECT@` → 1 token/pos 6, `@SELECT` → 0,
-      `SELECT 42 @ ;` → 2 tokens/pos 10, unterminated → 0 tokens/pos 0. Still open separately:
-      OOM path must use the same reporting contract (no offending byte to index for `%c`).
-- [~] **Part 8 — EOF/list robustness:** EOF pointer at end DONE 2026-11-27; remaining:
-      `token_list_free(NULL)` test, 10,000-token stress under ASan, OOM-path reasoning.
-- [ ] **Part 9 — `token_type_name`** (see bug above; recover from `tests/scratch.c`).
-- [ ] **Part 10 — full checkpoint:** `"SELECT * FROM users WHERE id = 3;"` (10 exact spans in
-      `current.md`) + grammar-free `"FROM SELECT , , ;"`.
-- [ ] **Guide checklist tests** (~line 2610): position checks; prefix cases
-      `"selection"`/`"SEL"`/`"SE"`/`"S"` → `TOKEN_IDENT`; `"SELECT@"` → error naming the
-      character; identifiers with digits/underscores (`user_id2`) but not starting with a digit;
-      `token_list_free(NULL)` safe; 10,000-token stress input.
+      no EOF on error, `error_pos` preserved, lone `!` covered.
+- [x] **Part 8 — EOF/list robustness DONE 2026-11-27:** EOF pointer at end, `token_list_free(NULL)`
+      test, 10,000-token stress (10,001 tokens, ASan clean), OOM path reported at source.
+- [x] **Part 9 — `token_type_name` DONE 2026-11-27** (see bug above).
+- [x] **Part 10 — full checkpoint DONE 2026-11-27:** `"SELECT * FROM users WHERE id = 3;"` (10
+      exact spans) + grammar-free `"FROM SELECT , , ;"`.
+- [x] **Guide checklist tests DONE 2026-11-27:** case variants, prefix cases, identifier spelling,
+      `SELECT@` error, `token_list_free(NULL)`, 10,000-token stress.
 
 ## Open design decisions (decide before the parser grows)
 
@@ -60,16 +53,16 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **41 t
       one line to stderr at the detection site; truncate the list at the bad byte with **no
       EOF** (EOF is success-only). One contract for lexical errors and allocation failure.
       The existing `errorrrr`/`return NULL` tail must be rewritten.
-- [ ] **`token_type_name` spelling:** enum names (`"STAR"`, `"LTE"`) vs user-facing SQL symbols
-      (`"*"`, `"<="`). The guide derives `expect()` messages from it, so decide now.
-- [ ] **EOF token field convention** (see bug above).
+- [x] **`token_type_name` spelling:** enum names (`"STAR"`, `"LTE"`) chosen and documented in
+      `src/tokenizer.h`; parser `expect()` messages will use those names.
+- [x] **EOF token field convention** — closed 2026-11-27 (see bug above).
 
 ## Cleanup (non-blocking)
 
 - [x] Remove the leftover `aaaaa` in `tokenizer.c` — done 2026-11-26 during formatting pass.
 - [x] Rename `__EXIT` / `__CONTINUE` / `__CANTPARSE` → `REPL_EXIT` / `REPL_CONTINUE` /
       `REPL_CANTPARSE` (leading `__` is reserved) — done 2026-11-26.
-- [ ] `list_push`: `return false` on OOM rather than `assert`; single growth path.
+- [x] `list_push` / `tkn_list_add`: `return false` on OOM; single growth path — done 2026-11-27.
 - [ ] Delete branch `rescue-a1ce250` once you are confident nothing else is needed.
 - [ ] Drop the stale stash `stash@{0}` (the superseded `tokenizer.h` comment deletion).
 - [ ] Delete the stray `~/.config/nvim/dap.lua` on this machine (dead code; the setup script now
