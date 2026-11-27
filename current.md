@@ -284,34 +284,36 @@ main loop calls `peek()` one byte past the string's NUL. That line must be condi
 to terminate via `had_error`, so nothing needs consuming and incrementing only creates an
 out-of-bounds `peek`. The loop already tracks the distinction — no new flag.
 
+**Step 4 progress 2026-11-27:** `source_index`, `token_string` and `token_length` are now assigned,
+the increment is conditional and follows the length computation. Build clean; **41 tests, 1
+failed** — only `unterminated_string_reports_opening_quote` (error_pos 1 instead of 0, because
+the dispatch arm still pushes on error and `tkn_list_add`'s else branch overwrites the position).
+Scratch `'hello'`, `'hi'x`, `''` all show correct spans.
+
 **Remaining work, in order:**
 
-1. On success, consume the closing quote (`cursor_position += 1`) *after* computing the span.
-   The loop stops with the cursor **on** that quote; leaving it there re-enters the quote arm,
-   which is what produced two `ERROR` tokens in scratch earlier.
-2. Assign the other three `Token` fields (derivation below). They are still the initializer
-   values: `token_error`, pointer at the opening quote, position 0, length 0.
-3. Guard the push in the arm with `!had_error`, so a refused push cannot overwrite `error_pos`
-   and `error_msg` via `tkn_list_add`'s else branch on the error path.
+1. ~~On success, consume the closing quote after computing the span.~~ DONE 2026-11-27.
+2. ~~Assign the other three `Token` fields.~~ DONE 2026-11-27.
+3. Guard the push in the dispatch arm with `!had_error`, so a refused push cannot overwrite
+   `error_pos` and `error_msg` via `tkn_list_add`'s else branch on the error path.
 4. Checkpoint: **41 tests, 0 failed**, plus scratch on `'hello'`, `'hi'x`, `''` and `'abc`.
 
 **The span derivation** — `cursor_position` points at the closing quote when the loop stops:
 
 | Field | Value | Meaning |
 |---|---|---|
-| `offset_position` | `starting_offset_position + 1` | index of first content byte in the whole source |
-| `input_string` | `lexer->input_string + offset_position` | pointer into the source; not a copy |
-| `word_length` | `cursor_position - offset_position` | byte count of the slice |
+| `source_index` | `starting_offset_position + 1` | index of first content byte in the whole source |
+| `token_string` | `lexer->input_string + source_index` | pointer into the source; not a copy |
+| `token_length` | `cursor_position - source_index` | byte count of the slice |
 
-Compute `word_length` **before** consuming the closing quote or it grows by one. Invariant:
-`input_string == lexer->input_string + offset_position`. `'hello'` → pos 1, len 5, cursor 7.
-`''` → pos 1, len 0 — a valid empty slice.
+Compute `token_length` **before** consuming the closing quote or it grows by one. Invariant:
+`token_string == lexer->input_string + source_index`. `'hello'` → pos 1, len 5, cursor 7
+after the increment. `''` → pos 1, len 0 — a valid empty slice.
 
-**Rename candidate (do after step 4 is green, separate mechanical commit):**
-`input_string` → `text_start`, `word_length` → `byte_length`, `offset_position` →
-`source_offset`. The current names mislead: a token is a view into the source, not the source,
-and numbers/strings/punctuation aren't words. A rename touches `tokenizer.h`, all scanners,
-`tests/test_tokenizer.c`, and `tests/scratch.c`. The guide uses `start` / `length`.
+**Rename — DONE 2026-11-27 (mechanical commit `0d0be1c`):** the earlier candidate names were
+`text_start` / `byte_length` / `source_offset`; the learner chose `token_string` /
+`token_length` / `source_index` instead. Only the `Token` fields were renamed; `Lexer.input_string`
+and the `tokenize` parameter keep their name because they mean the whole source.
 
 ## Part 7 — unknown characters become errors
 

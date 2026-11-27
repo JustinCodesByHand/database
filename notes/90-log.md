@@ -837,3 +837,18 @@ expected 0 got 2) because the increment now precedes the length computation and 
 uses the opening offset rather than `source_index`. The unterminated test regressed to error_pos
 1 because the unguarded push lets `tkn_list_add` overwrite the reported position. Recorded in
 `notes/41`; next step is the length ordering/base, then the push guard.
+
+### 2026-11-27 — length part written on request; "cognitive overload" diagnosis
+
+Learner asked to have the length part written for him. Wrote it: compute
+`token_length = cursor_position - string_token.source_index` while the cursor is still on the
+closing quote, then increment; moved the stale comment with it. Verified: build clean, 41 tests
+1 failed (four valid strings green; unterminated still error_pos 1), scratch `'hello'` → pos 1
+len 5, `'hi'x` → STRING + IDENT, `''` → pos 1 len 0.
+
+Asked what he was missing; he suspected cognitive overload. That is accurate at the interface
+level: three distinct facts had to be held at once — (1) `source_index` is a `size_t` offset, not
+the byte or pointer, (2) the cursor at loop exit is the exclusive end of content, so length comes
+before the increment, (3) the length is measured from `source_index`, not the opening quote. The
+load-bearing idea is (2); once it is held, (1) and (3) are bookkeeping. Recorded in `notes/41`,
+`current.md` and `todo`; code + notes committed together.

@@ -179,6 +179,14 @@ subtracts `starting_offset_position`, so for `'hello'` it yields 7 instead of 5;
 comment still describes an unconditional increment. The dispatch arm also still pushes the
 string token unconditionally on error, letting `tkn_list_add` overwrite `error_pos`/`error_msg`.
 
+**Length fix written by assistant on request (2026-11-27):** in the success branch,
+`token_length = cursor_position - string_token.source_index` is computed **before** the closing
+quote is consumed; the increment moved after it, and the stale comment moved with it. Verified:
+build clean, **41 tests, 1 failed** — the four valid-string tests are green. Scratch shows
+`'hello'` → `STRING pos=1 len=5`, `'hi'x` → `STRING pos=1 len=2` + `IDENT x`, `''` →
+`STRING pos=1 len=0`. The remaining failure is the unterminated case: `error_pos` is 1 because the
+dispatch arm still pushes on error and `tkn_list_add` overwrites it.
+
 **Verified after the `source_index` fix (2026-11-27):** build clean; **41 tests, 5 failed**.
 The four valid-string failures are all length +2 (`'hello'` expected 5, got 7; `''` expected 0,
 got 2): the cursor is incremented before `token_length` is computed, and the subtraction uses
