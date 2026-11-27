@@ -246,11 +246,59 @@ consequence of the chosen scan loop, not a grammar decision. Ask before extendin
 `ASSERT_EQ_MEM("hello", t->input_string, t->word_length)`. `ASSERT_EQ_STR` is only for
 NUL-terminated values like `token_type_name`'s return (Part 9).
 
-**Debug:** `make scratch ARG="'hello'"` — the harness prints spans with `%.*s` and
-`(int)t->word_length`, which is the correct way to view a token.
+**Debug:** `make scratch ARG="\"'hello'\""` — the harness prints spans with `%.*s` and
+`(int)t->word_length`, which is the correct way to view a token. The double-quote escaping is
+needed so the shell passes the apostrophes through; `ARG="'hello'"` loses them.
 
 **Checkpoint:** span excludes quotes; interior whitespace survives; cursor one past the
 close; unterminated has a usable position; every previously green test stays green.
+
+### Step 4 status — resume here next session (2026-11-26)
+
+**On disk, uncommitted:** `tokenize_string` at `src/tokenizer.c:188`. Its opening-quote increment
+and scan loop are correct now:
+
+```c
+lexer->cursor_position += 1;
+while (!is_at_end(lexer) && !closing_quote) {
+  if (peek(lexer) == '\'') closing_quote = true;
+  else lexer->cursor_position += 1;
+}
+```
+
+The failure branch calls `error_reporting(lexer, starting_offset_position)`; the success branch
+sets `token_type = TOKEN_STRING`. The dispatch arm at `:281` calls the helper and pushes
+unconditionally. Build is clean. **41 tests, 4 failed** — only the four valid-string tests;
+the hang is gone and the unterminated case is green.
+
+**Remaining work, in order:**
+
+1. On success, consume the closing quote (`cursor_position += 1`) *after* computing the span.
+   The loop stops with the cursor **on** that quote; leaving it there re-enters the quote arm,
+   which is what produced two `ERROR` tokens in scratch earlier.
+2. Assign the other three `Token` fields (derivation below). They are still the initializer
+   values: `token_error`, pointer at the opening quote, position 0, length 0.
+3. Guard the push in the arm with `!had_error`, so a refused push cannot overwrite `error_pos`
+   and `error_msg` via `tkn_list_add`'s else branch on the error path.
+4. Checkpoint: **41 tests, 0 failed**, plus scratch on `'hello'`, `'hi'x`, `''` and `'abc`.
+
+**The span derivation** — `cursor_position` points at the closing quote when the loop stops:
+
+| Field | Value | Meaning |
+|---|---|---|
+| `offset_position` | `starting_offset_position + 1` | index of first content byte in the whole source |
+| `input_string` | `lexer->input_string + offset_position` | pointer into the source; not a copy |
+| `word_length` | `cursor_position - offset_position` | byte count of the slice |
+
+Compute `word_length` **before** consuming the closing quote or it grows by one. Invariant:
+`input_string == lexer->input_string + offset_position`. `'hello'` → pos 1, len 5, cursor 7.
+`''` → pos 1, len 0 — a valid empty slice.
+
+**Rename candidate (do after step 4 is green, separate mechanical commit):**
+`input_string` → `text_start`, `word_length` → `byte_length`, `offset_position` →
+`source_offset`. The current names mislead: a token is a view into the source, not the source,
+and numbers/strings/punctuation aren't words. A rename touches `tokenizer.h`, all scanners,
+`tests/test_tokenizer.c`, and `tests/scratch.c`. The guide uses `start` / `length`.
 
 ## Part 7 — unknown characters become errors
 
