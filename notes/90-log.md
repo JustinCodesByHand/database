@@ -907,3 +907,8 @@ Recorded in `notes/60`; awaiting the corrected value before touching code.
 Re-asked with indices for `'hello'`; learner answered "the final closing quote" (index 6). Named
 the recurring mix-up: EOF marks the end of input (index 7, the NUL), not the last visible
 character. Recorded in `notes/60`; nudge asks which index the input ends at.
+
+### 2026-11-27 — EOF index landed
+
+Learner corrected to 7 — input ends at the NUL, not the last visible byte. Recorded in `notes/60`.
+Next step is a failing test assertion for EOF's `token_string`, then the one-line fix in `tokenize`.
