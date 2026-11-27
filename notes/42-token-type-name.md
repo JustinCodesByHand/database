@@ -62,3 +62,8 @@ the point.
 
 Enum spellings (`"STAR"`, `"LTE"`) were chosen and documented in `src/tokenizer.h`. The parser's
 `expect()` messages will use those names; display symbols were considered but not adopted.
+
+**Misconception caught 2026-11-27:** asked whether adding `TOKEN_BOOL` would still fail with the
+fallback moved into `default:`. Learner answered yes — wrong. `default:` suppresses `-Wswitch`,
+so the build passes and the new token silently falls through to the fallback. This is precisely
+why the trailing `return` exists instead.

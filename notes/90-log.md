@@ -955,3 +955,9 @@ in `notes/42`; check asks which version fails if a new token type is added tomor
 Learner stated the rule accurately: the compiler errors on an unhandled enum value. Confirmed that
 this is exactly the no-default version. Remaining connection to pin: moving the fallback into
 `default:` suppresses that same check.
+
+### 2026-11-27 — default suppresses the check; misconception named
+
+Learner answered "yes" to whether adding `TOKEN_BOOL` would still fail with a `default:` case.
+Named it plainly: no, `default:` suppresses `-Wswitch`; that is the whole reason the fallback is
+after the switch. Recorded in `notes/42`; re-check asks what value a new token would receive.
