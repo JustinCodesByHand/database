@@ -165,8 +165,13 @@ string tests) — the rename changed no behavior.
 branch still does not assign `token_length` / `source_index`, and the unconditional
 `cursor_position += 1` after the loop runs even on the unterminated path — with the cursor
 already at the NUL, that pushes it past the string and ASan reports a global-buffer-overflow in
-`peek` from `unterminated_string_reports_opening_quote`. Fix the unterminated path before the
-next full-suite run.
+`peek` from `unterminated_string_reports_opening_quote`.
+
+**Learner's decision (2026-11-27):** increment after the loop only if `closing_quote` is true.
+On the NUL exit, leave the cursor alone — `had_error` terminates the main loop, so the extra
+increment buys nothing and reads past the source. This is a branch of the flag the loop already
+maintains, not a new state variable. Still to apply on disk; then the four valid-string tests
+remain the checkpoint.
 
 **Step 3 DONE (learner-written, 2026-11-26):** EOF push is guarded by `if (!had_error)` and
 the `errorrrr` / `return NULL` tail is gone. His first version left `bool add_to_list` declared

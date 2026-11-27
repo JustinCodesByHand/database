@@ -279,6 +279,11 @@ also exposes an ASan global-buffer-overflow in `unterminated_string_reports_open
 main loop calls `peek()` one byte past the string's NUL. That line must be conditional on
 `closing_quote` (or moved into the success branch) before step 4 can be called green.
 
+**Decision 2026-11-27 (learner):** the post-loop `cursor_position += 1` happens **only when
+`closing_quote` is true**. On the NUL exit the cursor stays put: the main loop is already about
+to terminate via `had_error`, so nothing needs consuming and incrementing only creates an
+out-of-bounds `peek`. The loop already tracks the distinction — no new flag.
+
 **Remaining work, in order:**
 
 1. On success, consume the closing quote (`cursor_position += 1`) *after* computing the span.

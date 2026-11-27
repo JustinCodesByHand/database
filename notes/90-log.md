@@ -758,3 +758,12 @@ behavior changed. New observation from the full run: ASan aborts in
 `tokenize_string` increments the cursor after its scan loop unconditionally, so the failed
 scan leaves the cursor one past the NUL and the main loop reads out of bounds. Pre-existing
 step-4 gap, not a rename regression; recorded in `todo`, `current.md` and `notes/41`.
+
+### 2026-11-27 — unterminated-string cursor branch decided
+
+Asked what should happen to `tokenize_string`'s post-loop `cursor_position += 1` on the two
+loop exits. Learner answered: increment only when `closing_quote` is true. That matches the
+loop's own state — the NUL exit means `had_error` is already set and the main loop terminates,
+so the increment has no consumer and only produces the out-of-bounds `peek`. The fix is not yet
+applied on disk; the next checkpoint is a rebuild plus the full suite, then the four valid-string
+tests and the scratch inputs. Recorded in `current.md` and `notes/41`.
