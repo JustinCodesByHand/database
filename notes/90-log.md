@@ -777,3 +777,13 @@ true at every stable point of a computation, not merely at its end; the lexer's 
 died on `"SELECT * FROM users"` — the distinction that makes an invariant useful as a debugging
 tool rather than a description of one run. Filed under `notes/50-concepts-c.md` and ended with a
 question about which invariant catches an early cursor increment.
+
+### 2026-11-27 — invariant question landed as a gap; repaired concretely
+
+Learner answered "im not sure" to which invariant catches an early cursor increment. That is a
+genuine gap, not a wrong model: the arithmetic identity `token_length == cursor_position -
+source_index` survives the bad increment, so it can't be the thing that detects it. Repair used
+indices for `'hello'` (0 quote, 1-5 content, 6 quote, 7 NUL): computing the length at cursor 6
+gives span `[1,6)` = `hello`; incrementing first gives `[1,7)` = `hello'`. The violated promise
+is that the span is exactly the token's content, delimiters excluded. Filed in `notes/50`; next
+question asks which span includes a quote byte.

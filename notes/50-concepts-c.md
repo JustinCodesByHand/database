@@ -45,6 +45,14 @@ happened to be true for `"SELECT"` — input ended right after the word. It is a
 a promise: `"SELECT * FROM users"` broke it. An invariant is something you can *count on* at
 every stable point, not something that happened to match once.
 
+**Concrete repair when this felt abstract (2026-11-27):** for `'hello'`, indices are
+`0='`, `1..5=hello`, `6='`, `7=NUL`. After the scan loop the cursor is on 6 and `source_index=1`.
+Computing `token_length = 6 - 1 = 5` gives the span `[1,6)` = `hello`; incrementing first gives
+`7 - 1 = 6`, span `[1,7)` = `hello'`. Both satisfy the arithmetic identity, so that identity
+cannot diagnose the bug. Only the promise "the span is exactly the token's content — delimiters
+excluded" rules out the second. Lesson: check invariants against *meaning*, not just against the
+formula used to compute the fields.
+
 ## Types
 
 7. **Unsigned fields cannot hold sentinels.** `token_length = -1` becomes `SIZE_MAX`
