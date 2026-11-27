@@ -252,3 +252,8 @@ guard on disk does fire. The intended contrast was different: a string that scan
 has `token_type == TOKEN_STRING`, and then `tkn_list_add` hits OOM and sets `had_error` while
 leaving that type alone. The question did not say which value "unchanged" meant — my ambiguity,
 not a learner error. Clarified the two states and re-asked with `TOKEN_STRING` named explicitly.
+
+**Check landed 2026-11-27:** with `token_type == TOKEN_STRING` and `had_error` set by an
+allocation failure, learner answered that the `had_error` check sees it. The split is now clear:
+`token_type == token_error` is the lexical-failure signal inside `tokenize_string`; `had_error` is
+the list-level signal covering lexical and allocation failure. The parser must check `had_error`.

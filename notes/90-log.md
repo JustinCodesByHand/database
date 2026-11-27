@@ -887,3 +887,10 @@ Correction to the previous entry: the check question was ambiguous. "Only the to
 correct for the on-disk unterminated case (`token_type == token_error`). The intended hypothetical
 was an OOM after a successful scan (`token_type == TOKEN_STRING`), where only a `had_error` guard
 would fire. Notes corrected; question re-asked with the value named.
+
+### 2026-11-27 — guard-signal distinction landed
+
+Re-asked the clarified question: successful scan leaves `TOKEN_STRING`, then `tkn_list_add` sets
+`had_error` on OOM. Learner answered that the `had_error` check sees it. Confirmed; recorded in
+`notes/41`. Step 4 is green and the concept is held, so Part 8 (EOF pointer, NULL-safe free,
+10,000-token stress) is the next queue item.
