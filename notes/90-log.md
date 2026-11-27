@@ -808,3 +808,6 @@ closing quote. Next action is the code change in `tokenize_string` and a full-su
 Learner reported being stuck when asked to apply the guarded increment and the span assignments
 in `tokenize_string`. No code trace yet; asking which of the two edits is the break before
 offering a hint, so the nudge lands at the first unanswerable point.
+
+Localized: learner is blocked on **both** edits. Starting with the increment guard (the ASan
+cause), then the field assignments; one at a time.
