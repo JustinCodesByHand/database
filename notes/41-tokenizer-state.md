@@ -173,10 +173,19 @@ and added the field assignments. Partly right: the increment is conditional and 
 `source_index` was assigned a `const char *` instead of `starting_offset_position + 1` — the
 build fails with `-Wint-conversion`; (1b) next attempt assigned the **byte**
 `lexer->input_string[starting_offset_position]` (`'` = 39) instead of the index — compiler now
-reports `-Werror=sign-conversion`; (2) `token_length` is computed *after* the increment and
+reports `-Werror=sign-conversion`; (1c) **fixed 2026-11-27:** `source_index =
+starting_offset_position + 1`, build is clean; (2) `token_length` is computed *after* the increment and
 subtracts `starting_offset_position`, so for `'hello'` it yields 7 instead of 5; (3) the stale
 comment still describes an unconditional increment. The dispatch arm also still pushes the
 string token unconditionally on error, letting `tkn_list_add` overwrite `error_pos`/`error_msg`.
+
+**Verified after the `source_index` fix (2026-11-27):** build clean; **41 tests, 5 failed**.
+The four valid-string failures are all length +2 (`'hello'` expected 5, got 7; `''` expected 0,
+got 2): the cursor is incremented before `token_length` is computed, and the subtraction uses
+`starting_offset_position` (0) instead of `source_index` (1). The unterminated test now fails at
+`error_pos` (expected 0, got 1) because the unguarded push reaches `tkn_list_add`'s else branch,
+which overwrites the position with `newToken.source_index`. ASan reports leaks only because
+failing assertions abort before those tests free their lists.
 
 **Learner's decision (2026-11-27):** increment after the loop only if `closing_quote` is true.
 On the NUL exit, leave the cursor alone — `had_error` terminates the main loop, so the extra

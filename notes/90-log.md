@@ -828,3 +828,12 @@ the opening quote (`'` = 39), not the byte's index. Build moved from `-Wint-conv
 `-Werror=sign-conversion`; still red. The distinction to install: `source_index` is a `size_t`
 offset into the source, while `input_string[i]` is what lives at that offset. Recorded in
 `notes/41`; nudge asks which expression yields the index of the first content byte.
+
+### 2026-11-27 — `source_index` fixed; next break is `token_length`
+
+Learner applied `source_index = starting_offset_position + 1`; build is clean. Full suite:
+41 tests, 5 failed. The four valid strings are uniformly +2 (hello expected 5 got 7, empty
+expected 0 got 2) because the increment now precedes the length computation and the subtraction
+uses the opening offset rather than `source_index`. The unterminated test regressed to error_pos
+1 because the unguarded push lets `tkn_list_add` overwrite the reported position. Recorded in
+`notes/41`; next step is the length ordering/base, then the push guard.
