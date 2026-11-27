@@ -67,6 +67,20 @@ the **whole input**. They are not interchangeable.
 - **A `Token` does not own its text.** It points *into* the caller's source, so the source
   must outlive the token list. No NUL terminator is guaranteed.
 - **`tokenize` returns a heap list; the caller owns it** and must call `token_list_free`.
+**String span derivation (step 4):** content starts at `starting_offset_position + 1`; when the
+scan loop stops, `cursor_position` points *at* the closing quote. So
+`offset_position = starting_offset_position + 1`,
+`input_string = lexer->input_string + offset_position`, and
+`word_length = cursor_position - offset_position`. Compute the length **before** consuming the
+closing quote (`cursor_position += 1`) or it grows by one. Invariant:
+`input_string == lexer->input_string + offset_position`. For `''`, length is 0 — valid.
+
+**Rename candidates (do after step 4 is green, as a separate mechanical commit):**
+`input_string` → `text_start` (it is a pointer into the source, not the whole source),
+`word_length` → `byte_length` or `span_length` (numbers/strings/punctuation are not words),
+`offset_position` → `source_offset`. A rename touches `tokenizer.h`, every scanner, the tests,
+and `tests/scratch.c`. The guide uses `start` / `length`.
+
 - **`word_length`, `start_index`, `error_pos` are `size_t` (unsigned).** They can never hold a
   negative sentinel — `-1` becomes `SIZE_MAX`. That is why `TokenList` has a separate
   `bool had_error` instead of a magic negative.
