@@ -901,3 +901,9 @@ Part 8 opener: what should the EOF token's `token_string` hold? Learner answered
 quote-to-quote span, which is the string token's shape. Named the mix-up and pointed to the
 distinguishing fact: EOF has zero length, so its span collapses to the NUL at `cursor_position`.
 Recorded in `notes/60`; awaiting the corrected value before touching code.
+
+### 2026-11-27 — EOF pointer still conflated with string token
+
+Re-asked with indices for `'hello'`; learner answered "the final closing quote" (index 6). Named
+the recurring mix-up: EOF marks the end of input (index 7, the NUL), not the last visible
+character. Recorded in `notes/60`; nudge asks which index the input ends at.

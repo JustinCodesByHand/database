@@ -74,3 +74,8 @@ identifiers with digits/underscores (`user_id2`) but not starting with a digit;
 `token_length = 0`: its span begins and ends at one byte, the NUL at `cursor_position`. So
 `token_string = lexer.input_string + lexer.cursor_position`, preserving the invariant
 `token_string == input_string + source_index`.
+
+**Second miss (2026-11-27):** learner again answered from the string token — "the final closing
+quote". The crack is treating EOF as a marker for the last real character. It is not: EOF is the
+end of the *input*, so its byte is the NUL after all characters. For `'hello'`, quote is index 6,
+NUL is index 7, cursor is 7. Nudge asks which index the input actually ends at.
