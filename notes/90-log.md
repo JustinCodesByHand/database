@@ -689,3 +689,12 @@ Learner wrote the step 3 guard himself. His first build failed on a leftover
 bare `tkn_list_add(...)` call. Wrote the three Part 7 tests and added the missing count
 assertion to the unterminated test. Result: **41 tests, 4 failed** — all error tests green, only
 the four valid-string tests red (step 4). Format check and strict build clean.
+
+### Step 4 in progress — guided review (no code supplied)
+
+Learner added `tokenize_string` at `tokenizer.c:188` and an `else if ((unsigned char)peek(&lexer)
+== '\'')` arm at `:271` — placement is right. Build currently fails: `string_token` is declared
+in the arm and never used. On disk the helper initializes only `token_type` and `input_string`,
+never assigns `offset_position` / `word_length`, never calls `error_reporting`, and its loop
+checks `peek() == '\''` starting at the opening quote. Guided by questions only, per learner
+request.
