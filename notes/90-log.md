@@ -942,3 +942,10 @@ and made scratch call the real function. Changed `grow_list_capisity` to return 
 about, not deterministically triggered. `make fmt`, `make test`, `make all` and scratch all clean:
 **48 tests, 0 failed**. Updated `todo`, `current.md`, `ainotes.md`, `notes/41`, `notes/42`,
 `notes/43` and `notes/60`; committed code + tests + notes together.
+
+### 2026-11-27 — no-default rationale repaired with a compiler demo
+
+Learner was unsure why `token_type_name`'s fallback is after the switch rather than in
+`default:`. Built two tiny enums in `/tmp/opencode/switch-demo`: missing enumerator without
+`default:` fails under `-Werror=switch`; the same switch with `default:` compiles clean. Recorded
+in `notes/42`; check asks which version fails if a new token type is added tomorrow.

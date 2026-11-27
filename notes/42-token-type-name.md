@@ -37,6 +37,13 @@ line 25). The literal string `token_type_name` appears in that file only in a **
 
 ### Why no `default:` (proven, not assumed)
 
+Compiler rule verified again 2026-11-27 with a three-enum scratch file under
+`-Wall -Wextra -Werror`: a switch handling only `A` and `B` fails with
+`error: enumeration value 'C' not handled in switch [-Werror=switch]`; adding `default:` makes the
+same file compile clean. `-Wswitch` is an enum-coverage check, and `default:` suppresses it. The
+trailing fallback after the switch still handles a bogus `(tokentype)999` without giving up that
+check.
+
 - Adding `TOKEN_BOOL` to the enum *without* a `default:` gives
   `error: enumeration value 'TOKEN_BOOL' not handled in switch [-Werror=switch]`.
 - The *same* edit **with** a `default:` exits 0 and silently hands the new token `"?"`.
