@@ -187,12 +187,33 @@ static void error_reporting(Lexer *lexer, size_t starting_offset_position) {
 
 static Token tokenize_string(Lexer *lexer, size_t starting_offset_position) {
   bool closing_quote = false;
-  while (!closing_quote) {
-    if (peek(&lexer) == '\'') {
+  Token string_token;
+  string_token.token_type = token_error;
+  string_token.input_string = lexer->input_string + starting_offset_position;
+
+  // increment cursor so we begin reading after the first open-quote
+  lexer->cursor_position += 1;
+
+  while (!is_at_end(lexer) && !closing_quote) {
+
+    if (peek(lexer) == '\'') {
       closing_quote = true;
     } else {
+      lexer->cursor_position += 1;
     }
   }
+
+  if (closing_quote == true) {
+    string_token.token_type = TOKEN_STRING;
+
+  } else {
+    error_reporting(lexer, starting_offset_position);
+  }
+  // we end on the closing quote, increment so we start main loop on next
+  // character
+  lexer->cursor_position += 1;
+
+  return string_token;
 }
 
 /*
@@ -264,6 +285,7 @@ TokenList *tokenize(const char *input_string) {
 
     } else if ((unsigned char)peek(&lexer) == '\'') {
       Token string_token = tokenize_string(&lexer, starting_offset_position);
+      tkn_list_add(lexer.lex_tkn_list_struct, string_token);
     } else {
       Token punctuation_token;
       bool made_punct = false;
