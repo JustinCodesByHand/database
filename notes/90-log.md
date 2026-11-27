@@ -811,3 +811,12 @@ offering a hint, so the nudge lands at the first unanswerable point.
 
 Localized: learner is blocked on **both** edits. Starting with the increment guard (the ASan
 cause), then the field assignments; one at a time.
+
+### 2026-11-27 — checked learner's first step-4 edit
+
+Asked "did I make the right changes?" and inspected `src/tokenizer.c` on disk. The increment is
+now inside the success branch and `token_string` targets the content — both right. Not right:
+`source_index` assigned a pointer (build fails `-Wint-conversion`), `token_length` computed after
+the increment and against the opening offset (7 for `'hello'` instead of 5), and a stale comment.
+The dispatch arm still pushes on error. Recorded in `notes/41`; next nudge is to fix `source_index`
+first and read the next compiler error.

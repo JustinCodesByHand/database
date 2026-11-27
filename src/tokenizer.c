@@ -204,12 +204,12 @@ static Token tokenize_string(Lexer *lexer, size_t starting_offset_position) {
   }
 
   if (closing_quote == true) {
+    lexer->cursor_position += 1;
     string_token.token_type = TOKEN_STRING;
     string_token.token_string =
         lexer->input_string + starting_offset_position + 1;
     string_token.token_length =
         lexer->cursor_position - starting_offset_position;
-    lexer->cursor_position += 1;
 
   } else {
     error_reporting(lexer, starting_offset_position);

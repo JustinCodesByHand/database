@@ -167,6 +167,15 @@ branch still does not assign `token_length` / `source_index`, and the unconditio
 already at the NUL, that pushes it past the string and ASan reports a global-buffer-overflow in
 `peek` from `unterminated_string_reports_opening_quote`.
 
+**First edit checked on disk (2026-11-27):** learner moved the increment into the success branch
+and added the field assignments. Partly right: the increment is conditional and the
+`token_string` pointer targets content (`input + opening + 1`). Three defects remain: (1)
+`source_index` was assigned a `const char *` instead of `starting_offset_position + 1` — the
+build fails with `-Wint-conversion`; (2) `token_length` is computed *after* the increment and
+subtracts `starting_offset_position`, so for `'hello'` it yields 7 instead of 5; (3) the stale
+comment still describes an unconditional increment. The dispatch arm also still pushes the
+string token unconditionally on error, letting `tkn_list_add` overwrite `error_pos`/`error_msg`.
+
 **Learner's decision (2026-11-27):** increment after the loop only if `closing_quote` is true.
 On the NUL exit, leave the cursor alone — `had_error` terminates the main loop, so the extra
 increment buys nothing and reads past the source. This is a branch of the flag the loop already
