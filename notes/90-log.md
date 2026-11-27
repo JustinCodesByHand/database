@@ -875,3 +875,10 @@ in the string dispatch arm. Inspected disk, rebuilt and ran the suite: **41 test
 build clean, ASan clean. The guard differs from the discussed `had_error` check but is equivalent
 for this helper today; noted the contract-level distinction for the parser later. Marked Parts 6
 and 7 done in `todo` and `current.md`; code + notes committed with this log entry.
+
+### 2026-11-27 — guard-signal check missed
+
+Check question: with `had_error` set and `token_type` unchanged, which guard still stops the
+push? Learner answered "only the token_type in this case" — ambiguous between "on disk" (true)
+and the hypothetical (wrong). Named the crack and nudged back to the condition: a guard on an
+unchanged field cannot see the failure. Recorded in `notes/41`.
