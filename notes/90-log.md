@@ -737,3 +737,6 @@ loop condition excludes the very byte the body tests for, and nothing advances t
 so the quote byte can enter the body and set the flag. Reminder given: the body still needs its
 non-quote `else { cursor += 1; }` or the cursor never advances; `is_at_end` stays as the
 unterminated-input exit.
+
+**Learner confirmed:** when the scan loop stops, `cursor_position` points at the closing quote
+(it was never consumed). Next nudge: consume it before returning, then assign the Token span.
