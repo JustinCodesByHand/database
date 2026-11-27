@@ -22,6 +22,29 @@ things that actually came up while building the lexer.
    That is why every helper takes `Lexer *foo` (the name `foo` is just a local name — the caller
    picks the object) and why `lex_tkn_list_struct` is a field *inside* `Lexer`.
 
+## Invariants (asked 2026-11-27)
+
+**An invariant is a condition true at every stable point of a computation — before the first
+step, after each step, and at exit — not just at the end.** "Stable point" means between
+operations, when no helper is half-finished. You hold it as a promise about the state, then use
+it as a tool: when it breaks, the step that broke it is the bug, so you never have to search
+the whole program.
+
+Two live ones in this lexer:
+
+| Invariant | Where it must hold |
+|---|---|
+| `cursor_position` is the index of the **next unread byte** | between tokens in `tokenize`'s main loop |
+| `token_string == lexer->input_string + source_index`, and `[source_index, source_index + token_length)` is exactly the token's content | whenever a `Token` is completed/pushed |
+
+The second is what excludes the quotes from a string token: content starts at
+`source_index = opening + 1` and ends where the cursor stopped (on the closing quote).
+
+**Arithmetic identity is not the same as an invariant.** `strlen(token_string) == token_length`
+happened to be true for `"SELECT"` — input ended right after the word. It is a coincidence, not
+a promise: `"SELECT * FROM users"` broke it. An invariant is something you can *count on* at
+every stable point, not something that happened to match once.
+
 ## Types
 
 7. **Unsigned fields cannot hold sentinels.** `token_length = -1` becomes `SIZE_MAX`

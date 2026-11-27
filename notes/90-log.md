@@ -767,3 +767,13 @@ loop's own state — the NUL exit means `had_error` is already set and the main 
 so the increment has no consumer and only produces the out-of-bounds `peek`. The fix is not yet
 applied on disk; the next checkpoint is a rebuild plus the full suite, then the four valid-string
 tests and the scratch inputs. Recorded in `current.md` and `notes/41`.
+
+### 2026-11-27 — "what is an invariant?"
+
+Learner asked for the definition mid-step-4. Answered from the code: an invariant is a condition
+true at every stable point of a computation, not merely at its end; the lexer's live examples are
+`cursor_position` = next unread byte and the token span invariants. Contrasted it with
+`strlen(token_string) == token_length`, which was true for `"SELECT"` only by coincidence and
+died on `"SELECT * FROM users"` — the distinction that makes an invariant useful as a debugging
+tool rather than a description of one run. Filed under `notes/50-concepts-c.md` and ended with a
+question about which invariant catches an early cursor increment.

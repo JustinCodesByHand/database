@@ -205,13 +205,13 @@ static Token tokenize_string(Lexer *lexer, size_t starting_offset_position) {
 
   if (closing_quote == true) {
     string_token.token_type = TOKEN_STRING;
+    lexer->cursor_position += 1;
 
   } else {
     error_reporting(lexer, starting_offset_position);
   }
   // we end on the closing quote, increment so we start main loop on next
   // character
-  lexer->cursor_position += 1;
 
   return string_token;
 }
