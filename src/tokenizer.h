@@ -36,9 +36,9 @@ typedef enum {
 
 typedef struct {
   tokentype token_type;
-  const char *input_string;
-  size_t word_length;
-  size_t offset_position;
+  const char *token_string;
+  size_t token_length;
+  size_t source_index;
 } Token;
 
 typedef struct {

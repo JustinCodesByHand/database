@@ -60,11 +60,11 @@ static void addToStruct(TokenList *tkn_list_struct, Token newToken) {
   tkn_list_struct->token_list_buffer[tkn_list_struct->total_num_tkns - 1]
       .token_type = newToken.token_type;
   tkn_list_struct->token_list_buffer[tkn_list_struct->total_num_tkns - 1]
-      .offset_position = newToken.offset_position;
+      .source_index = newToken.source_index;
   tkn_list_struct->token_list_buffer[tkn_list_struct->total_num_tkns - 1]
-      .input_string = newToken.input_string;
+      .token_string = newToken.token_string;
   tkn_list_struct->token_list_buffer[tkn_list_struct->total_num_tkns - 1]
-      .word_length = newToken.word_length;
+      .token_length = newToken.token_length;
 }
 
 // lexer Helper that adds new tokens to its list
@@ -83,7 +83,7 @@ static bool tkn_list_add(TokenList *tkn_list_struct, Token newToken) {
   } else {
     newToken.token_type = token_error;
     tkn_list_struct->had_error = true;
-    tkn_list_struct->error_pos = newToken.offset_position;
+    tkn_list_struct->error_pos = newToken.source_index;
     tkn_list_struct->error_msg =
         "grow_list_capisity threw an error, it uses malloc and realloc";
     return false;
@@ -115,16 +115,16 @@ static const keyword KEYWORDS[] = {
 // creates and returns a new token that starts isalpha()
 static Token tokenize_word(Lexer *lexer, size_t starting_index) {
   Token new_word_Token;
-  new_word_Token.offset_position = starting_index;
-  new_word_Token.word_length =
-      lexer->cursor_position - new_word_Token.offset_position;
-  new_word_Token.input_string = lexer->input_string + starting_index;
+  new_word_Token.source_index = starting_index;
+  new_word_Token.token_length =
+      lexer->cursor_position - new_word_Token.source_index;
+  new_word_Token.token_string = lexer->input_string + starting_index;
   new_word_Token.token_type = TOKEN_IDENT; // default value
 
   for (size_t i = 0; i < (sizeof(KEYWORDS) / sizeof(KEYWORDS[0])); i++) {
-    if (new_word_Token.word_length == strlen(KEYWORDS[i].word) &&
-        strncasecmp(new_word_Token.input_string, KEYWORDS[i].word,
-                    new_word_Token.word_length) == 0) {
+    if (new_word_Token.token_length == strlen(KEYWORDS[i].word) &&
+        strncasecmp(new_word_Token.token_string, KEYWORDS[i].word,
+                    new_word_Token.token_length) == 0) {
       new_word_Token.token_type = KEYWORDS[i].keywordType;
     }
   }
@@ -135,9 +135,9 @@ static Token tokenize_word(Lexer *lexer, size_t starting_index) {
 static Token tokenize_number(Lexer *lexer, size_t starting_index) {
   Token number_token;
   number_token.token_type = TOKEN_NUMBER;
-  number_token.offset_position = starting_index;
-  number_token.word_length = lexer->cursor_position - starting_index;
-  number_token.input_string = lexer->input_string + starting_index;
+  number_token.source_index = starting_index;
+  number_token.token_length = lexer->cursor_position - starting_index;
+  number_token.token_string = lexer->input_string + starting_index;
 
   return number_token;
 }
@@ -165,8 +165,8 @@ static Token tokenize_punctuation(Lexer *lexer, size_t starting_index) {
   };
 
   for (size_t i = 0; i < (sizeof(PUNCTUATIONS) / sizeof PUNCTUATIONS[0]); i++) {
-    if (strncasecmp(new_punctuation_token.input_string, PUNCTUATIONS[i].symbol,
-                    new_punctuation_token.word_length) == 0) {
+    if (strncasecmp(new_punctuation_token.token_string, PUNCTUATIONS[i].symbol,
+                    new_punctuation_token.token_length) == 0) {
       new_punctuation_token.token_type = PUNCTUATIONS[i].punct_type;
       return new_punctuation_token;
     }
@@ -189,7 +189,7 @@ static Token tokenize_string(Lexer *lexer, size_t starting_offset_position) {
   bool closing_quote = false;
   Token string_token;
   string_token.token_type = token_error;
-  string_token.input_string = lexer->input_string + starting_offset_position;
+  string_token.token_string = lexer->input_string + starting_offset_position;
 
   // increment cursor so we begin reading after the first open-quote
   lexer->cursor_position += 1;

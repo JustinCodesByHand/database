@@ -3,7 +3,8 @@
 Updated: 2026-11-26 · branch `main` (in sync with `origin/main`)
 Full detail lives in `notes/` (start at `ainotes.md`). This file is the short, actionable list;
 the ordered, checkpoint-by-checkpoint tokenizer path is in `current.md` (Parts 1-5 done, 6-10
-expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **33 tests, 0 failed**.
+expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **41 tests, 4 failed**
+(only the four valid-string tests; the unterminated path currently aborts under ASan).
 
 ## Bugs to fix
 
@@ -13,6 +14,11 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **33 t
       Fix: run `scripts/setup-nvim-dap.sh` (step 3 now moves such files aside), `:Lazy sync`,
       restart. Checks + error capture: `notes/23-debug-lazyvim-troubleshoot.md`. The primary
       machine is verified clean.
+- [ ] **`tokenize_string` overruns the source on unterminated input:** it increments
+      `cursor_position` after the scan loop unconditionally, so the next `peek()` reads past the
+      NUL (ASan global-buffer-overflow in `unterminated_string_reports_opening_quote`). Consume
+      the closing quote only on success; on failure leave the cursor alone — the main loop exits
+      via `had_error` anyway. Step 4 of `current.md`.
 - [ ] **Tokenizer still silently drops truly unknown chars** (`@`, lone `!`, …). Punctuation,
       operators and digits are now real tokens; the stopgap `default:` remains for the rest.
       Part 7 of `current.md` owns the error contract. `notes/41` defect 7.
@@ -92,6 +98,11 @@ expanded 2026-11-26); `tokenizer.md` holds the graduated hint bank. Disk: **33 t
       pushes/auto-push again (an unencrypted `~/.ssh/id_ed25519` already exists).
 
 ## Recently done
+
+- [x] **Token field rename (2026-11-27):** `Token.input_string/word_length/offset_position` →
+      `token_string/token_length/source_index` in header, scanners, tests and scratch harness.
+      `Lexer.input_string` and the `tokenize` parameter keep their name. Build clean; behavior
+      unchanged (41 tests, 4 failed as before).
 
 - [x] `*` → `TOKEN_STAR`; infinite loop on unknown chars fixed. **7 tests, 0 failed.** `141c958`.
 - [x] Prefix-match bug in `tokenize_word` fixed (length check).

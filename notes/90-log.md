@@ -740,3 +740,21 @@ unterminated-input exit.
 
 **Learner confirmed:** when the scan loop stops, `cursor_position` points at the closing quote
 (it was never consumed). Next nudge: consume it before returning, then assign the Token span.
+
+### 2026-11-27 — token field rename applied; step 4 still red
+
+Learner confirmed `word_length` → `token_length` (the "token length" phrasing was an
+underscore question, not a new name). Renamed only the `Token` fields:
+`input_string` → `token_string`, `word_length` → `token_length`, `offset_position` →
+`source_index`. `Lexer.input_string` and the `tokenize(const char *input_string)` parameter
+were deliberately left alone — they name the whole source, which is exactly the collision
+the rename removes. Four files touched: `src/tokenizer.h`, `src/tokenizer.c`,
+`tests/test_tokenizer.c`, `tests/scratch.c`; notes and `todo` updated in the same pass.
+
+Build is clean under `-Wall -Wextra -Werror -Wshadow -Wconversion -Wpointer-arith` with
+ASan/UBSan. Suite still reports **41 tests, 4 failed**, the four valid-string tests — no
+behavior changed. New observation from the full run: ASan aborts in
+`unterminated_string_reports_opening_quote` with a global-buffer-overflow in `peek` —
+`tokenize_string` increments the cursor after its scan loop unconditionally, so the failed
+scan leaves the cursor one past the NUL and the main loop reads out of bounds. Pre-existing
+step-4 gap, not a rename regression; recorded in `todo`, `current.md` and `notes/41`.

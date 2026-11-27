@@ -17,9 +17,9 @@ typedef enum {
 
 typedef struct {
   tokentype token_type;
-  const char *input_string;      /* points INTO the input. NOT owned. NOT NUL-terminated. */
-  size_t word_length;
-  size_t start_index;
+  const char *token_string;      /* points INTO the input. NOT owned. NOT NUL-terminated. */
+  size_t token_length;
+  size_t source_index;
 } Token;
 
 typedef struct {
@@ -50,44 +50,50 @@ committed**. Final names:
 |---|---|---|
 | enum type name | `TokenType` | `tokentype` |
 | `Token.token_type` | `type` | `token_type` |
-| `Token.input_string` | `start` | `input_string` |
-| `Token.start_index` | `position` | `start_index` |
+| `Token.input_string` | `start` | `input_string` → **`token_string`** (2026-11-27) |
+| `Token.word_length` | — | `word_length` → **`token_length`** (2026-11-27) |
+| `Token.offset_position` | `start_index` → `position` → `offset_position` | **`source_index`** (2026-11-27) |
 | `TokenList.token_list_buffer` | `tknlst_buffer` | `token_list_buffer` |
 | `TokenList.tknlst_capacity` | `capacity` | `tknlst_capacity` (kept the old spelling) |
 | `Lexer.input_string` | `source` | `input_string` |
 | `Lexer.lex_tkn_list_struct` | `lex_tkn_list` | `lex_tkn_list_struct` |
 | `tokenize` param | `source` | `input_string` |
 
-**Gotcha:** the name `input_string` now means two different things —
-`Token.input_string` points at a token's **first character**; `Lexer.input_string` points at
-the **whole input**. They are not interchangeable.
+**Second rename, DONE 2026-11-27 (mechanical commit):** the `Token` fields are now
+`token_string`, `token_length`, `source_index`. `Lexer.input_string` and the `tokenize` parameter
+keep the name `input_string` — they name the **whole source**, not a span. The old collision is
+therefore gone: `Token.token_string != Lexer.input_string` by name as well as by meaning.
+
+Touched: `src/tokenizer.h`, `src/tokenizer.c`, `tests/test_tokenizer.c`, `tests/scratch.c`.
+Local variables such as `starting_offset_position` were deliberately left alone; only the
+struct fields were renamed. Build is clean under the strict flags.
 
 ## Invariants to remember
 
 - **A `Token` does not own its text.** It points *into* the caller's source, so the source
   must outlive the token list. No NUL terminator is guaranteed.
 - **`tokenize` returns a heap list; the caller owns it** and must call `token_list_free`.
-**String span derivation (step 4):** content starts at `starting_offset_position + 1`; when the
-scan loop stops, `cursor_position` points *at* the closing quote. So
-`offset_position = starting_offset_position + 1`,
-`input_string = lexer->input_string + offset_position`, and
-`word_length = cursor_position - offset_position`. Compute the length **before** consuming the
+**String span derivation (step 4, rewritten with the final field names):** content starts at
+`starting_offset_position + 1`; when the scan loop stops, `cursor_position` points *at* the
+closing quote. So `source_index = starting_offset_position + 1`,
+`token_string = lexer->input_string + source_index`, and
+`token_length = cursor_position - source_index`. Compute the length **before** consuming the
 closing quote (`cursor_position += 1`) or it grows by one. Invariant:
-`input_string == lexer->input_string + offset_position`. For `''`, length is 0 — valid.
+`token_string == lexer->input_string + source_index`. For `''`, length is 0 — valid.
 
-**Rename candidates (do after step 4 is green, as a separate mechanical commit):**
-`input_string` → `text_start` (it is a pointer into the source, not the whole source),
-`word_length` → `byte_length` or `span_length` (numbers/strings/punctuation are not words),
-`offset_position` → `source_offset`. A rename touches `tokenizer.h`, every scanner, the tests,
-and `tests/scratch.c`. The guide uses `start` / `length`.
+**Rename candidates — resolved 2026-11-27.** The learner chose `token_string` /
+`token_length` / `source_index` over the earlier `text_start` / `byte_length` / `source_offset`
+suggestion. Rationale on disk: every token carries a token string, a token length and a source
+index; "word" was wrong for numbers, strings and punctuation, and "input_string" collided with
+the lexer's whole-source pointer.
 
-- **`word_length`, `start_index`, `error_pos` are `size_t` (unsigned).** They can never hold a
+- **`token_length`, `source_index`, `error_pos` are `size_t` (unsigned).** They can never hold a
   negative sentinel — `-1` becomes `SIZE_MAX`. That is why `TokenList` has a separate
   `bool had_error` instead of a magic negative.
-- **A token is a span, not a copy.** `word_length = cursor_position - start_index`, and
+- **A token is a span, not a copy.** `token_length = cursor_position - source_index`, and
   `cursor_position` is exclusive (points one past the last consumed char).
 
-## See the span invariant in the debugger (the word_length recipe)
+## See the span invariant in the debugger (the token_length recipe)
 
 For any bug of the shape "works alone, breaks when input follows the word" — run it live:
 
@@ -106,19 +112,19 @@ match-assignment line (`newToken.token_type = KEYWORDS[i].keywordType;`) — see
 
 | Expression | Value | What it tells you |
 |---|---|---|
-| `newToken.input_string` (as string) | `"SELECT * FROM users"` | the pointer does **not** stop at the word — the span invariant, visible |
-| `newToken.word_length` | `6` | where the word actually ends |
+| `new_word_Token.token_string` (as string) | `"SELECT * FROM users"` | the pointer does **not** stop at the word — the span invariant, visible |
+| `new_word_Token.token_length` | `6` | where the word actually ends |
 | `KEYWORDS[i].word` | `"select"` | the entry being compared |
-| `strlen(newToken.input_string)` | `19` | what the buggy third argument passed — the whole remaining source |
+| `strlen(new_word_Token.token_string)` | `19` | what the buggy third argument passed — the whole remaining source |
 
-**The two-run demonstration:** with `word_length` as the third argument, step over the call:
+**The two-run demonstration:** with `token_length` as the third argument, step over the call:
 `strncasecmp` compares exactly 6 bytes → returns 0 → the match-assignment line **fires**.
-Swap the third argument back to `strlen(newToken.input_string)` and rerun: same hit, `n` is
+Swap the third argument back to `strlen(new_word_Token.token_string)` and rerun: same hit, `n` is
 now 19, the compare walks past the word (byte 7: `' '` vs the entry's `'\0'`) → nonzero →
 the match-assignment line **never fires** → the token stays `TOKEN_IDENT`. The line that
 never fires is the whole story.
 
 **Why the tests passed with the bug aboard:** every test input ended right after the word —
-`strlen(input_string)` equals `word_length` *by coincidence* (the word ends at the source's
+`strlen(token_string)` equals `token_length` *by coincidence* (the word ends at the source's
 end). The debugger shows the two values separating the moment anything follows the keyword.
 The guard is a multi-word test: `"SELECT * FROM users"` → `SELECT, STAR, FROM, IDENT, EOF`.

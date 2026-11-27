@@ -34,8 +34,8 @@ static void select_input_is_select_then_eof(void) {
 
   /* the keyword: starts at index 0 and spans the 6 characters "SELECT" */
   ASSERT_EQ_INT(TOKEN_SELECT, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(6, tknlst->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(6, tknlst->token_list_buffer[0].token_length);
 
   /* then the end-of-input marker */
   ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[1].token_type);
@@ -51,8 +51,8 @@ static void star_input_is_star_then_eof(void) {
 
   /* the operator: one character, at index 0 */
   ASSERT_EQ_INT(TOKEN_STAR, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, tknlst->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, tknlst->token_list_buffer[0].token_length);
 
   /* then the end-of-input marker */
   ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[1].token_type);
@@ -68,8 +68,8 @@ static void from_input_is_from_then_eof(void) {
 
   /* the keyword: starts at index 0 and spans the 4 characters "FROM" */
   ASSERT_EQ_INT(TOKEN_FROM, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(4, tknlst->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(4, tknlst->token_list_buffer[0].token_length);
 
   /* then the end-of-input marker */
   ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[1].token_type);
@@ -95,8 +95,8 @@ static void from_prefix_is_ident_then_eof(void) {
   ASSERT_EQ_INT(2, tknlst->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(7, tknlst->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(7, tknlst->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[1].token_type);
 
   token_list_free(tknlst);
@@ -110,8 +110,8 @@ static void selection_is_ident_then_eof(void) {
   ASSERT_EQ_INT(2, tknlst->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(9, tknlst->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(9, tknlst->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[1].token_type);
 
   token_list_free(tknlst);
@@ -119,8 +119,8 @@ static void selection_is_ident_then_eof(void) {
 
 /* [checklist] position correctness / full statement: "SELECT * FROM users"
  * keeps every keyword recognized when input FOLLOWS the word — the guard for
- * the span bug (the third strncasecmp argument is word_length, NOT
- * strlen(input_string): the word is a span, the source runs past it). */
+ * the span bug (the third strncasecmp argument is token_length, NOT
+ * strlen(token_string): the word is a span, the source runs past it). */
 static void select_from_users_full_statement(void) {
   TokenList *tknlst = tokenize_with("SELECT * FROM users");
   ASSERT_NOT_NULL(tknlst);
@@ -128,23 +128,23 @@ static void select_from_users_full_statement(void) {
 
   /* SELECT: 6 chars at index 0 */
   ASSERT_EQ_INT(TOKEN_SELECT, tknlst->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(6, tknlst->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, tknlst->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(6, tknlst->token_list_buffer[0].token_length);
 
   /* STAR: 1 char at index 7 */
   ASSERT_EQ_INT(TOKEN_STAR, tknlst->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(7, tknlst->token_list_buffer[1].offset_position);
-  ASSERT_EQ_INT(1, tknlst->token_list_buffer[1].word_length);
+  ASSERT_EQ_INT(7, tknlst->token_list_buffer[1].source_index);
+  ASSERT_EQ_INT(1, tknlst->token_list_buffer[1].token_length);
 
   /* FROM: 4 chars at index 9 */
   ASSERT_EQ_INT(TOKEN_FROM, tknlst->token_list_buffer[2].token_type);
-  ASSERT_EQ_INT(9, tknlst->token_list_buffer[2].offset_position);
-  ASSERT_EQ_INT(4, tknlst->token_list_buffer[2].word_length);
+  ASSERT_EQ_INT(9, tknlst->token_list_buffer[2].source_index);
+  ASSERT_EQ_INT(4, tknlst->token_list_buffer[2].token_length);
 
   /* users: an identifier, 5 chars at index 14 */
   ASSERT_EQ_INT(TOKEN_IDENT, tknlst->token_list_buffer[3].token_type);
-  ASSERT_EQ_INT(14, tknlst->token_list_buffer[3].offset_position);
-  ASSERT_EQ_INT(5, tknlst->token_list_buffer[3].word_length);
+  ASSERT_EQ_INT(14, tknlst->token_list_buffer[3].source_index);
+  ASSERT_EQ_INT(5, tknlst->token_list_buffer[3].token_length);
 
   /* then the end-of-input marker */
   ASSERT_EQ_INT(TOKEN_EOF, tknlst->token_list_buffer[4].token_type);
@@ -168,8 +168,8 @@ static void comma_is_comma_then_eof(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_COMMA, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -180,8 +180,8 @@ static void semicolon_is_semicolon_then_eof(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_SEMICOLON, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -192,8 +192,8 @@ static void lparen_is_lparen_then_eof(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_LPAREN, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -204,8 +204,8 @@ static void rparen_is_rparen_then_eof(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_RPAREN, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -217,16 +217,16 @@ static void ident_comma_ident(void) {
   ASSERT_EQ_INT(4, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_COMMA, l->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(1, l->token_list_buffer[1].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[1].word_length);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].token_length);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[2].token_type);
-  ASSERT_EQ_INT(2, l->token_list_buffer[2].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[2].word_length);
+  ASSERT_EQ_INT(2, l->token_list_buffer[2].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[2].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[3].token_type);
   token_list_free(l);
@@ -238,8 +238,8 @@ static void eq_is_eq_then_eof(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_EQ, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -250,8 +250,8 @@ static void lt_is_lt_then_eof(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_LT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -262,8 +262,8 @@ static void gt_is_gt_then_eof(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_GT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -275,16 +275,16 @@ static void ident_gt_ident(void) {
   ASSERT_EQ_INT(4, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_GT, l->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(1, l->token_list_buffer[1].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[1].word_length);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].token_length);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[2].token_type);
-  ASSERT_EQ_INT(2, l->token_list_buffer[2].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[2].word_length);
+  ASSERT_EQ_INT(2, l->token_list_buffer[2].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[2].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[3].token_type);
   token_list_free(l);
@@ -296,8 +296,8 @@ static void lte_twochar(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_LTE, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -308,8 +308,8 @@ static void gte_twochar(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_GTE, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -320,8 +320,8 @@ static void neq_twochar(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_NEQ, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -332,8 +332,8 @@ static void lt_single_still_lt(void) {
   ASSERT_NOT_NULL(l);
   ASSERT_EQ_INT(2, l->total_num_tkns);
   ASSERT_EQ_INT(TOKEN_LT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
 }
@@ -345,16 +345,16 @@ static void ident_lt_ident(void) {
   ASSERT_EQ_INT(4, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_LT, l->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(1, l->token_list_buffer[1].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[1].word_length);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].token_length);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[2].token_type);
-  ASSERT_EQ_INT(2, l->token_list_buffer[2].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[2].word_length);
+  ASSERT_EQ_INT(2, l->token_list_buffer[2].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[2].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[3].token_type);
   token_list_free(l);
@@ -367,16 +367,16 @@ static void ident_lte_ident(void) {
   ASSERT_EQ_INT(4, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_LTE, l->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(1, l->token_list_buffer[1].offset_position);
-  ASSERT_EQ_INT(2, l->token_list_buffer[1].word_length);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].source_index);
+  ASSERT_EQ_INT(2, l->token_list_buffer[1].token_length);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[2].token_type);
-  ASSERT_EQ_INT(3, l->token_list_buffer[2].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[2].word_length);
+  ASSERT_EQ_INT(3, l->token_list_buffer[2].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[2].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[3].token_type);
   token_list_free(l);
@@ -389,8 +389,8 @@ static void user_id2_is_ident_len8(void) {
   ASSERT_EQ_INT(2, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(8, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(8, l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
@@ -403,8 +403,8 @@ static void users_still_ident_len5(void) {
   ASSERT_EQ_INT(2, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(5, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(5, l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
@@ -417,8 +417,8 @@ static void set_still_set(void) {
   ASSERT_EQ_INT(2, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_SET, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(3, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(3, l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
@@ -431,8 +431,8 @@ static void seti_still_ident(void) {
   ASSERT_EQ_INT(2, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(4, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(4, l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
@@ -445,8 +445,8 @@ static void number_42_is_number_then_eof(void) {
   ASSERT_EQ_INT(2, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_NUMBER, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
   token_list_free(l);
@@ -460,20 +460,20 @@ static void id_eq_42_semi_is_ident_eq_number_semi_eof(void) {
   ASSERT_EQ_INT(5, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_EQ, l->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(2, l->token_list_buffer[1].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[1].word_length);
+  ASSERT_EQ_INT(2, l->token_list_buffer[1].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].token_length);
 
   ASSERT_EQ_INT(TOKEN_NUMBER, l->token_list_buffer[2].token_type);
-  ASSERT_EQ_INT(3, l->token_list_buffer[2].offset_position);
-  ASSERT_EQ_INT(2, l->token_list_buffer[2].word_length);
+  ASSERT_EQ_INT(3, l->token_list_buffer[2].source_index);
+  ASSERT_EQ_INT(2, l->token_list_buffer[2].token_length);
 
   ASSERT_EQ_INT(TOKEN_SEMICOLON, l->token_list_buffer[3].token_type);
-  ASSERT_EQ_INT(5, l->token_list_buffer[3].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[3].word_length);
+  ASSERT_EQ_INT(5, l->token_list_buffer[3].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[3].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[4].token_type);
   token_list_free(l);
@@ -487,14 +487,14 @@ static void quoted_hello_is_string_with_quotes_excluded(void) {
   ASSERT_EQ_INT(2, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_STRING, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(5, l->token_list_buffer[0].word_length);
-  ASSERT(l->token_list_buffer[0].input_string == input + 1);
-  ASSERT_EQ_MEM("hello", l->token_list_buffer[0].input_string,
-                l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(5, l->token_list_buffer[0].token_length);
+  ASSERT(l->token_list_buffer[0].token_string == input + 1);
+  ASSERT_EQ_MEM("hello", l->token_list_buffer[0].token_string,
+                l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(7, l->token_list_buffer[1].offset_position);
+  ASSERT_EQ_INT(7, l->token_list_buffer[1].source_index);
   token_list_free(l);
 }
 
@@ -506,13 +506,13 @@ static void quoted_space_keeps_interior_whitespace(void) {
   ASSERT_EQ_INT(2, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_STRING, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(3, l->token_list_buffer[0].word_length);
-  ASSERT_EQ_MEM("a b", l->token_list_buffer[0].input_string,
-                l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(3, l->token_list_buffer[0].token_length);
+  ASSERT_EQ_MEM("a b", l->token_list_buffer[0].token_string,
+                l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(5, l->token_list_buffer[1].offset_position);
+  ASSERT_EQ_INT(5, l->token_list_buffer[1].source_index);
   token_list_free(l);
 }
 
@@ -524,12 +524,12 @@ static void empty_quoted_string_is_zero_length(void) {
   ASSERT_EQ_INT(2, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_STRING, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(0, l->token_list_buffer[0].word_length);
-  ASSERT(l->token_list_buffer[0].input_string == input + 1);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(0, l->token_list_buffer[0].token_length);
+  ASSERT(l->token_list_buffer[0].token_string == input + 1);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(2, l->token_list_buffer[1].offset_position);
+  ASSERT_EQ_INT(2, l->token_list_buffer[1].source_index);
   token_list_free(l);
 }
 
@@ -540,17 +540,17 @@ static void quoted_string_does_not_swallow_following_ident(void) {
   ASSERT_EQ_INT(3, l->total_num_tkns);
 
   ASSERT_EQ_INT(TOKEN_STRING, l->token_list_buffer[0].token_type);
-  ASSERT_EQ_INT(1, l->token_list_buffer[0].offset_position);
-  ASSERT_EQ_INT(2, l->token_list_buffer[0].word_length);
-  ASSERT_EQ_MEM("hi", l->token_list_buffer[0].input_string,
-                l->token_list_buffer[0].word_length);
+  ASSERT_EQ_INT(1, l->token_list_buffer[0].source_index);
+  ASSERT_EQ_INT(2, l->token_list_buffer[0].token_length);
+  ASSERT_EQ_MEM("hi", l->token_list_buffer[0].token_string,
+                l->token_list_buffer[0].token_length);
 
   ASSERT_EQ_INT(TOKEN_IDENT, l->token_list_buffer[1].token_type);
-  ASSERT_EQ_INT(4, l->token_list_buffer[1].offset_position);
-  ASSERT_EQ_INT(1, l->token_list_buffer[1].word_length);
+  ASSERT_EQ_INT(4, l->token_list_buffer[1].source_index);
+  ASSERT_EQ_INT(1, l->token_list_buffer[1].token_length);
 
   ASSERT_EQ_INT(TOKEN_EOF, l->token_list_buffer[2].token_type);
-  ASSERT_EQ_INT(5, l->token_list_buffer[2].offset_position);
+  ASSERT_EQ_INT(5, l->token_list_buffer[2].source_index);
   token_list_free(l);
 }
 

@@ -109,9 +109,9 @@ int main(int argc, char **argv) {
   for (size_t i = 0; i < list->total_num_tkns; i++) {
     const Token *t = &list->token_list_buffer[i];
     printf("  [%zu] %-9s pos=%-3zu len=%-3zu text=\"%.*s\"\n", i,
-           scratch_type_name(t->token_type), t->offset_position, t->word_length,
-           (int)t->word_length, /* %.*s wants int; word_length is size_t */
-           t->input_string);
+           scratch_type_name(t->token_type), t->source_index, t->token_length,
+           (int)t->token_length, /* %.*s wants int; token_length is size_t */
+           t->token_string);
   }
 
   if (list->had_error) {

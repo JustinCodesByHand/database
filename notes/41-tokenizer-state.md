@@ -57,9 +57,9 @@ by the `static const keyword KEYWORDS[]` table + one loop in `tokenize_word` (le
 5. **`token_type_name` is not implemented.** Declaration commented out in the header. See
    [42-token-type-name](42-token-type-name.md).
 6. **EOF token fields are inconsistent.** `{TOKEN_EOF, lexer.input_string, 0,
-   lexer.cursor_position}` sets `input_string` to the *start* of input but `start_index` to the
-   *end*. `word_length = 0` is correct. Natural value: `lexer.input_string +
-   lexer.cursor_position`.
+   lexer.cursor_position}` sets `token_string` to the *start* of input but `source_index` to the
+   *end*. `token_length = 0` is correct. Natural value: `lexer.input_string +
+   lexer.cursor_position`. (Field names updated 2026-11-27.)
 7. **Unknown characters are silently dropped** (the `else` in `tokenize`). Fine as a hang-guard,
    but there is no error reported yet — the guide wants e.g. `"SELECT@"` to name the character.
    Also blocks `,` `;` `(` `)` and all comparison operators, which the chapter needs next.
@@ -153,6 +153,20 @@ therefore a success-only token — the parser must check `had_error` before rely
 Stopping immediately also dissolves the sticky-`had_error` push gate: no push follows the
 error. Tests must assert counts (e.g. `SELECT@` → 1 token, `@SELECT` → 0, unterminated string
 → 0).
+
+**Rename DONE (2026-11-27):** `Token` fields are now `token_string`, `token_length`,
+`source_index`. `Lexer.input_string` and the `tokenize` parameter keep `input_string`: they name
+the whole source. Mechanical commit across header, scanners, tests and scratch harness; build is
+clean under the strict flags. The suite still reports **41 tests, 4 failed** (the four valid
+string tests) — the rename changed no behavior.
+
+**Step 4 status after the rename (2026-11-27):** commit `331fd3c` contains the partial
+`tokenize_string` loop described in `current.md`; it has NOT yet been made green. The success
+branch still does not assign `token_length` / `source_index`, and the unconditional
+`cursor_position += 1` after the loop runs even on the unterminated path — with the cursor
+already at the NUL, that pushes it past the string and ASan reports a global-buffer-overflow in
+`peek` from `unterminated_string_reports_opening_quote`. Fix the unterminated path before the
+next full-suite run.
 
 **Step 3 DONE (learner-written, 2026-11-26):** EOF push is guarded by `if (!had_error)` and
 the `errorrrr` / `return NULL` tail is gone. His first version left `bool add_to_list` declared

@@ -22,12 +22,12 @@ The implementation satisfies "grow logic lives in one function"
 
 ## `list_push` copies verbatim
 
-`list_push` **does not compute** any field values. It copies `token_type`, `input_string`,
-`word_length`, `start_index` **verbatim** into the next slot. Whatever is in the initializer is
+`list_push` **does not compute** any field values. It copies `token_type`, `token_string`,
+`token_length`, `source_index` **verbatim** into the next slot (renamed 2026-11-27). Whatever is in the initializer is
 what lands in the list — there is **no later "fill in real values" step**.
 
 Consequence already hit: an EOF token written as `{TOKEN_EOF, lexer.input_string, 0,
-lexer.cursor_position}` silently keeps `input_string` = start-of-input. It is not "fixed up"
+lexer.cursor_position}` silently keeps `token_string` = start-of-input. It is not "fixed up"
 later; it is inconsistent by construction.
 
 ## Related traps

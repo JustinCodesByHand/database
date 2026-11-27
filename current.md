@@ -271,6 +271,14 @@ sets `token_type = TOKEN_STRING`. The dispatch arm at `:281` calls the helper an
 unconditionally. Build is clean. **41 tests, 4 failed** — only the four valid-string tests;
 the hang is gone and the unterminated case is green.
 
+**Post-rename update (2026-11-27):** the fields above are now `token_string` / `token_length` /
+`source_index` (`Lexer.input_string` is unchanged). The rename is committed and the build is
+clean. Full suite: **41 tests, 4 failed** — the same four valid-string tests. Running the suite
+also exposes an ASan global-buffer-overflow in `unterminated_string_reports_opening_quote`:
+`tokenize_string` increments `cursor_position` after the scan loop **even on failure**, so the
+main loop calls `peek()` one byte past the string's NUL. That line must be conditional on
+`closing_quote` (or moved into the success branch) before step 4 can be called green.
+
 **Remaining work, in order:**
 
 1. On success, consume the closing quote (`cursor_position += 1`) *after* computing the span.

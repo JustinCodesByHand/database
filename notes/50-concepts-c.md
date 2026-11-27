@@ -24,7 +24,7 @@ things that actually came up while building the lexer.
 
 ## Types
 
-7. **Unsigned fields cannot hold sentinels.** `word_length = -1` becomes `SIZE_MAX`
+7. **Unsigned fields cannot hold sentinels.** `token_length = -1` becomes `SIZE_MAX`
    (18446744073709551615). That is why `TokenList` has a separate `bool had_error` instead of a
    magic negative value.
 8. **Escape sequences:** `'\t'`, `'\n'`, `' '` are three different bytes.

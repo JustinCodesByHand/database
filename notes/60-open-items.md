@@ -40,8 +40,9 @@ identifiers with digits/underscores (`user_id2`) but not starting with a digit;
 - [ ] **`token_type_name` spelling:** enum names (`"STAR"`, `"LTE"`) vs user-facing SQL symbols
       (`"*"`, `"<="`). The guide (~line 2863) derives `expect()` messages from it, so decide
       now.
-- [ ] **EOF token fields:** `input_string` = start of input but `start_index` = end. Natural
-      value is `lexer.input_string + lexer.cursor_position`. (`word_length = 0` is correct.)
+- [ ] **EOF token fields:** `token_string` = start of input but `source_index` = end. Natural
+      value is `lexer.input_string + lexer.cursor_position`. (`token_length = 0` is correct.)
+      Names updated 2026-11-27; defect still open.
 
 ## Pending cleanup (non-blocking)
 
