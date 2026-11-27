@@ -712,3 +712,6 @@ Checked the DAP setup itself: `dap.core` import present, headless `dap.adapters.
 `lua/plugins/dap.lua`'s `program()` rebuilds with `make -C <root> build/tests` before launching.
 A stray `~/.config/nvim/dap.lua` also exists, but headless inspection shows it is not winning
 the adapter race on this machine.
+
+**Quote-layer check:** learner answered `strlen("'hello'") == 7` correctly — the debugger's
+display quotes and the NUL are not counted. Returned to the step 4 cursor question.
