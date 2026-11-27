@@ -284,19 +284,19 @@ main loop calls `peek()` one byte past the string's NUL. That line must be condi
 to terminate via `had_error`, so nothing needs consuming and incrementing only creates an
 out-of-bounds `peek`. The loop already tracks the distinction — no new flag.
 
-**Step 4 progress 2026-11-27:** `source_index`, `token_string` and `token_length` are now assigned,
-the increment is conditional and follows the length computation. Build clean; **41 tests, 1
-failed** — only `unterminated_string_reports_opening_quote` (error_pos 1 instead of 0, because
-the dispatch arm still pushes on error and `tkn_list_add`'s else branch overwrites the position).
-Scratch `'hello'`, `'hi'x`, `''` all show correct spans.
+**Step 4 DONE 2026-11-27:** `source_index`, `token_string` and `token_length` are assigned, the
+increment is conditional and follows the length computation, and the dispatch arm refuses to push
+a failed string token. Build clean, **41 tests, 0 failed**, ASan clean. Scratch `'hello'`, `'hi'x`,
+`''` show correct spans; `'abc` reports `error_pos = 0` with an empty list. Part 8 is next.
 
 **Remaining work, in order:**
 
 1. ~~On success, consume the closing quote after computing the span.~~ DONE 2026-11-27.
 2. ~~Assign the other three `Token` fields.~~ DONE 2026-11-27.
-3. Guard the push in the dispatch arm with `!had_error`, so a refused push cannot overwrite
-   `error_pos` and `error_msg` via `tkn_list_add`'s else branch on the error path.
-4. Checkpoint: **41 tests, 0 failed**, plus scratch on `'hello'`, `'hi'x`, `''` and `'abc`.
+3. ~~Guard the push in the dispatch arm.~~ DONE 2026-11-27 with
+   `if (string_token.token_type == token_error) break;` — equivalent today, but `had_error` is
+   the contract-level signal (see `notes/41`).
+4. Checkpoint reached: **41 tests, 0 failed**, scratch on `'hello'`, `'hi'x`, `''` and `'abc`.
 
 **The span derivation** — `cursor_position` points at the closing quote when the loop stops:
 

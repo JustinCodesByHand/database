@@ -287,6 +287,9 @@ TokenList *tokenize(const char *input_string) {
 
     } else if ((unsigned char)peek(&lexer) == '\'') {
       Token string_token = tokenize_string(&lexer, starting_offset_position);
+      if (string_token.token_type == token_error) {
+        break;
+      }
       tkn_list_add(lexer.lex_tkn_list_struct, string_token);
     } else {
       Token punctuation_token;

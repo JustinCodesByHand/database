@@ -179,6 +179,13 @@ subtracts `starting_offset_position`, so for `'hello'` it yields 7 instead of 5;
 comment still describes an unconditional increment. The dispatch arm also still pushes the
 string token unconditionally on error, letting `tkn_list_add` overwrite `error_pos`/`error_msg`.
 
+**Step 4 GREEN 2026-11-27:** learner added a guard in the string dispatch arm —
+`if (string_token.token_type == token_error) break;` before the push. Build clean, **41 tests,
+0 failed**, ASan clean. Note the guard uses `token_type` rather than the `had_error` check that
+was discussed: it works today because `tokenize_string` initialises the type to `token_error` and
+only changes it on success, and `break` is redundant since the loop's `!had_error` condition would
+exit anyway. The contract-level signal remains `had_error` (see open item below).
+
 **Remaining failure mechanism (2026-11-27):** on `'abc`, `error_reporting` correctly sets
 `had_error = true`, `error_pos = 0`, `error_msg = "Unexpected character"` and prints the byte.
 The string dispatch arm then calls `tkn_list_add` unconditionally. That function's else branch is

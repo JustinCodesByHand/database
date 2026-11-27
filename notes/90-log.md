@@ -867,3 +867,11 @@ Learner restated the fix as "check `had_error` in the dispatch and use it to gua
 Confirmed, with the timing detail: the check must come *after* `tokenize_string` returns, because
 that call is what sets the flag on an unterminated string; checking before it is always false.
 Same shape as the step-3 EOF guard.
+
+### 2026-11-27 — step 4 green
+
+Learner asked "did i fix it?" after adding `if (string_token.token_type == token_error) break;`
+in the string dispatch arm. Inspected disk, rebuilt and ran the suite: **41 tests, 0 failed**,
+build clean, ASan clean. The guard differs from the discussed `had_error` check but is equivalent
+for this helper today; noted the contract-level distinction for the parser later. Marked Parts 6
+and 7 done in `todo` and `current.md`; code + notes committed with this log entry.
