@@ -922,3 +922,9 @@ in `select_input_is_select_then_eof` and asserted EOF `source_index == 6`, `toke
 41 tests 0 failed, ASan clean. Marked EOF convention and defect 6 closed in `notes/41`,
 `notes/60`, `current.md` and `todo`. Remaining Part 8: `token_list_free(NULL)`, 10,000-token
 stress, and honest OOM reasoning.
+
+### 2026-11-27 — NULL-free guess corrected by disk
+
+Asked whether `token_list_free(NULL)` is safe; learner guessed "probably not safe" without
+reading. Checked `src/tokenizer.c:95`: explicit `if (tkn_list_struct != NULL)` guard plus C's
+`free(NULL)` no-op make it safe. Recorded in `notes/41`; next step is the test that pins it.

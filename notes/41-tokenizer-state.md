@@ -257,3 +257,8 @@ not a learner error. Clarified the two states and re-asked with `TOKEN_STRING` n
 allocation failure, learner answered that the `had_error` check sees it. The split is now clear:
 `token_type == token_error` is the lexical-failure signal inside `tokenize_string`; `had_error` is
 the list-level signal covering lexical and allocation failure. The parser must check `had_error`.
+
+**NULL-safety checked 2026-11-27:** `token_list_free` at `src/tokenizer.c:95` already has
+`if (tkn_list_struct != NULL) { free(buffer); free(list); }`, and C defines `free(NULL)` as a
+no-op. Learner guessed "probably not safe" — wrong; the guard is on disk. Next: add the test
+that pins it, rather than relying on reading alone.
