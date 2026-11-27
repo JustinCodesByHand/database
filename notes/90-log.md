@@ -802,3 +802,9 @@ After the flag/invariant distinction and the index table, learner answered that 
 stops `'hello'`'s span at the content. The invariant is now held as a usable rule: at loop exit
 the cursor is the exclusive content end, so `token_length` must be computed before consuming the
 closing quote. Next action is the code change in `tokenize_string` and a full-suite report.
+
+### 2026-11-27 — stuck applying step 4
+
+Learner reported being stuck when asked to apply the guarded increment and the span assignments
+in `tokenize_string`. No code trace yet; asking which of the two edits is the break before
+offering a hint, so the nudge lands at the first unanswerable point.

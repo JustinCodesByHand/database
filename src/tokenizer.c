@@ -189,7 +189,7 @@ static Token tokenize_string(Lexer *lexer, size_t starting_offset_position) {
   bool closing_quote = false;
   Token string_token;
   string_token.token_type = token_error;
-  string_token.token_string = lexer->input_string + starting_offset_position;
+  string_token.source_index = lexer->input_string + starting_offset_position;
 
   // increment cursor so we begin reading after the first open-quote
   lexer->cursor_position += 1;
@@ -205,6 +205,10 @@ static Token tokenize_string(Lexer *lexer, size_t starting_offset_position) {
 
   if (closing_quote == true) {
     string_token.token_type = TOKEN_STRING;
+    string_token.token_string =
+        lexer->input_string + starting_offset_position + 1;
+    string_token.token_length =
+        lexer->cursor_position - starting_offset_position;
     lexer->cursor_position += 1;
 
   } else {
