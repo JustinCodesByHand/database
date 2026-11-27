@@ -732,3 +732,8 @@ Learner changed the scan loop to `while (!is_at_end(lexer) && peek(lexer) != '\'
 on the failure branch and `TOKEN_STRING` on success. Build clean, but the suite **hangs**:
 `script -qec 'timeout 8 ./build/tests' /dev/null` gives exit 124 and no buffered output. The
 loop condition excludes the very byte the body tests for, and nothing advances the cursor.
+
+**Learner's fix (correct):** replace `peek != '\''` in the loop condition with `!closing_quote`,
+so the quote byte can enter the body and set the flag. Reminder given: the body still needs its
+non-quote `else { cursor += 1; }` or the cursor never advances; `is_at_end` stays as the
+unterminated-input exit.
