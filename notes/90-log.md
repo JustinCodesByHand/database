@@ -715,3 +715,12 @@ the adapter race on this machine.
 
 **Quote-layer check:** learner answered `strlen("'hello'") == 7` correctly — the debugger's
 display quotes and the NUL are not counted. Returned to the step 4 cursor question.
+
+### Step 4 progress: opening quote consumed
+
+Learner added `lexer->cursor_position += 1` before the scan loop and pushed the helper's result
+in the arm. Build is clean. Suite: **41 tests, 5 failed** (all string tests). Scratch `'hello'`
+shows `ERROR pos=0 len=0`, `ERROR pos=0 len=0`, `EOF pos=7`, `had_error = false` — so the helper
+leaves the cursor on the closing quote, causing a second trip through the quote arm, and its
+`Token` fields (`token_type`, `offset_position`, `word_length`, `input_string`) are still the
+initial ones. Unterminated input never calls `error_reporting`, hence `had_error` false.
