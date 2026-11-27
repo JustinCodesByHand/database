@@ -68,3 +68,9 @@ identifiers with digits/underscores (`user_id2`) but not starting with a digit;
       already installed). Offered, not yet actioned — see
       [21-debugging-neovim](21-debugging-neovim.md).
 - [x] Reorganize the notes into this tree (2026-10-16).
+
+**Misconception 2026-11-27:** asked what the EOF token's `token_string` should be; learner answered
+"the span of the start quote to the end quote" — that describes TOKEN_STRING, not EOF. EOF has
+`token_length = 0`: its span begins and ends at one byte, the NUL at `cursor_position`. So
+`token_string = lexer.input_string + lexer.cursor_position`, preserving the invariant
+`token_string == input_string + source_index`.

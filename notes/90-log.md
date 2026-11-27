@@ -894,3 +894,10 @@ Re-asked the clarified question: successful scan leaves `TOKEN_STRING`, then `tk
 `had_error` on OOM. Learner answered that the `had_error` check sees it. Confirmed; recorded in
 `notes/41`. Step 4 is green and the concept is held, so Part 8 (EOF pointer, NULL-safe free,
 10,000-token stress) is the next queue item.
+
+### 2026-11-27 — EOF pointer question missed
+
+Part 8 opener: what should the EOF token's `token_string` hold? Learner answered with a
+quote-to-quote span, which is the string token's shape. Named the mix-up and pointed to the
+distinguishing fact: EOF has zero length, so its span collapses to the NUL at `cursor_position`.
+Recorded in `notes/60`; awaiting the corrected value before touching code.
