@@ -245,9 +245,10 @@ branch's `starting_offset_position` (the opening quote), not the cursor after sc
 the reporting helper takes a `size_t position` argument and the caller supplies the captured
 offset; the helper does not consume characters.
 
-**Misconception caught 2026-11-27:** asked which guard would stop a push when `had_error` is set
-but `token_type` is unchanged; learner answered "only the token_type in this case". If that means
-the guard currently on disk, it is right as a description of the code — but under the
-hypothetical the `token_type` guard sees no change, so it cannot detect the failure. Localized the
-break to reading the hypothetical condition rather than the on-disk state; nudge asks what the
-`token_type` guard compares when nothing changed it.
+**Ambiguous check, corrected 2026-11-27:** asked which guard would stop a push when `had_error`
+is set but `token_type` is unchanged; learner answered "only the token_type in this case". That is
+**right for the on-disk case**: an unterminated string leaves `token_type == token_error`, so the
+guard on disk does fire. The intended contrast was different: a string that scanned successfully
+has `token_type == TOKEN_STRING`, and then `tkn_list_add` hits OOM and sets `had_error` while
+leaving that type alone. The question did not say which value "unchanged" meant — my ambiguity,
+not a learner error. Clarified the two states and re-asked with `TOKEN_STRING` named explicitly.

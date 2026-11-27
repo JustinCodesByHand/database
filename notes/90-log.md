@@ -882,3 +882,8 @@ Check question: with `had_error` set and `token_type` unchanged, which guard sti
 push? Learner answered "only the token_type in this case" — ambiguous between "on disk" (true)
 and the hypothetical (wrong). Named the crack and nudged back to the condition: a guard on an
 unchanged field cannot see the failure. Recorded in `notes/41`.
+
+Correction to the previous entry: the check question was ambiguous. "Only the token_type" is
+correct for the on-disk unterminated case (`token_type == token_error`). The intended hypothetical
+was an OOM after a successful scan (`token_type == TOKEN_STRING`), where only a `had_error` guard
+would fire. Notes corrected; question re-asked with the value named.
