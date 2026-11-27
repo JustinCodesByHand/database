@@ -52,6 +52,11 @@ SAN   := -fsanitize=address,undefined -fno-omit-frame-pointer
 | `make build/minidb` | build `build/minidb` **only** |
 | `make build/scratch` | build the tokenizer scratch harness **only** |
 | `make scratch [ARG='...']` | build **and run** the scratch harness (5s timeout) |
+
+**Passing literal quotes to scratch:** `make scratch ARG="'hello'"` loses the apostrophes — the
+shell strips the outer `'` when the recipe runs `./build/scratch $(ARG)`. Use
+`make scratch ARG="\"'hello'\""` so the recipe becomes `./build/scratch "'hello'"` and argv is
+the 7-byte string with both apostrophes. Same for any input whose bytes matter.
 | `make run` | run `build/minidb mini.db` |
 | `make clean` | remove `build/`, `*.db`, `*.wal` |
 | `make fmt` | `clang-format -i` every `.c`/`.h` under `src/` and `tests/` (style pinned by `.clang-format`: LLVM, 2 spaces, 80 columns) |
